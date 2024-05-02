@@ -311,7 +311,7 @@ def create_grid_vis_cells(world):
                 color=wall_color,
         ))
 
-def setup_scene(world):
+def setup_environment(world):
     # world.scene.add_default_ground_plane()
     
     # PhysicsContext()

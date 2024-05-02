@@ -40,7 +40,7 @@ from settings import actual_environment_y_min, actual_environment_y_max
 from grid import number_of_rows, number_of_columns
 from grid import normalized_x_steps, normalized_y_steps
 from grid import grey_grid, get_grid_rho
-import environment
+from environment import setup_environment
 
 # Hardcode inital v_rho0_i
 robs_initial_v_rho0_i = [[0,0,0] for _ in range(num_robots)]
@@ -57,7 +57,7 @@ class HelloWorld(BaseSample):
         return res
     
     def setup_scene(self):
-        environment.setup_scene(self._world)
+        setup_environment(self._world)
 
     async def setup_post_load(self):
         self.robots = [0 for _ in range(num_robots)]
