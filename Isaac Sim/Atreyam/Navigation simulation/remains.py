@@ -248,11 +248,8 @@ class HelloWorld(BaseSample):
         return target_rho
 
     def get_robot_target_p_rho0(self, target_rho):
-        normalized_x_steps = actual_environment_size_x / number_of_rows
-        normalized_y_steps = actual_environment_size_y / number_of_columns
-
-        target_p_rho_x = ((actual_environment_x_min + target_rho[0]*normalized_x_steps) + (actual_environment_x_min + (target_rho[0]+1)*normalized_x_steps)) /2
-        target_p_rho_y = ((actual_environment_y_min + target_rho[1]*normalized_y_steps) + (actual_environment_y_min + (target_rho[1]+1)*normalized_y_steps)) /2
+        target_p_rho_x = actual_environment_x_min + target_rho[0] * normalized_x_steps + normalized_x_steps / 2
+        target_p_rho_y = actual_environment_y_min + target_rho[1] * normalized_y_steps + normalized_y_steps / 2
 
         # Center point (in positional meters) of the cell robot i is targeted to occupy
         target_p_rho_i = [target_p_rho_x, target_p_rho_y,0]
