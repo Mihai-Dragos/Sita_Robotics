@@ -4,6 +4,7 @@ from omni.isaac.wheeled_robots.robots import WheeledRobot
 from omni.isaac.core.objects import FixedCuboid
 
 from omni.isaac.core.objects.ground_plane import GroundPlane
+import omni.isaac.core.utils.prims as prim_utils
 
 import numpy as np
 
