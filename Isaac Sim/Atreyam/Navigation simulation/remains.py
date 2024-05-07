@@ -21,7 +21,7 @@ from omni.isaac.range_sensor import _range_sensor               # Imports the py
 from pxr import UsdGeom, Gf, UsdPhysics                         # pxr usd imports used to create the cube
 
 from omni.isaac.core.physics_context import PhysicsContext
-import omni.isaac.core.utils.prims as prim_utils
+# import omni.isaac.core.utils.prims as prim_utils
 
 from omni.isaac.examples.user_examples.controllers import CoolController, MyHoloController
 
@@ -57,7 +57,8 @@ class HelloWorld(BaseSample):
         return res
     
     def setup_scene(self):
-        setup_environment(self._world)
+        _world = self.get_world()
+        setup_environment(_world)
 
     async def setup_post_load(self):
         self.robots = [0 for _ in range(num_robots)]
