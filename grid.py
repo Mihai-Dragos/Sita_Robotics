@@ -1,9 +1,9 @@
 import numpy as np
 
-from omni.isaac.examples.user_examples.settings import input_shape, num_iterations, num_robots, r_avoid
-from omni.isaac.examples.user_examples.settings import actual_environment_size_x, actual_environment_size_y
-from omni.isaac.examples.user_examples.settings import actual_environment_x_min, actual_environment_x_max
-from omni.isaac.examples.user_examples.settings import actual_environment_y_min, actual_environment_y_max
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import input_shape, num_iterations, num_robots, r_avoid
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_x_min, actual_environment_x_max
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_y_min, actual_environment_y_max
 
 def greyscale(shape_array, num_iterations):
     grey_grid = np.copy(shape_array).astype(float)

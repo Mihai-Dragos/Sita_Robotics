@@ -10,7 +10,7 @@
 import os
 
 from omni.isaac.examples.base_sample import BaseSampleExtension
-from omni.isaac.examples.user_examples.remains import HelloWorld
+from omni.isaac.examples.user_examples.git_isaac_sim.main import HelloWorld
 
 
 class HelloWorldExtension(BaseSampleExtension):
