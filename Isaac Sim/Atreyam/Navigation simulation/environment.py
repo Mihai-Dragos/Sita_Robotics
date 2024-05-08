@@ -6,6 +6,8 @@ from omni.isaac.core.objects import FixedCuboid
 from omni.isaac.core.objects.ground_plane import GroundPlane
 import omni.isaac.core.utils.prims as prim_utils
 
+import omni                                                     # Provides the core omniverse apis
+
 import numpy as np
 
 from omni.isaac.examples.user_examples.settings import num_robots

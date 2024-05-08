@@ -49,6 +49,6 @@ def get_grid_rho(pos):
             actual_environment_y_min <= pos[1] <= actual_environment_y_max):
         print("\n Position out of grid bounds in get_grid_rho(). pos:", pos,"\n")
 
-    cell_x = (pos[0] - actual_environment_size_x) // normalized_x_steps
-    cell_y = (pos[1] - actual_environment_size_y) // normalized_y_steps
+    cell_x = int((pos[0] - actual_environment_x_min) // normalized_x_steps)
+    cell_y = int((pos[1] - actual_environment_y_min) // normalized_y_steps)
     return [cell_x, cell_y]

@@ -233,11 +233,9 @@ class HelloWorld(BaseSample):
 
     def get_robot_target_rho(self, robot_index):
         curr_rho_x, curr_rho_y = self.get_robot_rho(robot_index)
-
-        curr_col = grey_grid[curr_rho_x, curr_rho_y]
-    
+       
         area = grey_grid[curr_rho_x-1:curr_rho_x+2, curr_rho_y-1:curr_rho_y+2]
-
+        
         local_min = np.min(area)
         
 
@@ -556,7 +554,7 @@ class HelloWorld(BaseSample):
     # End Interaction
 
     # Start Entering:
-        for robot_index in range(1): # num_robots
+        for robot_index in range(num_robots): # num_robots
             v_x, v_y, _ = self.shape_entering_velocity(robot_index)
             kf = 0.02
             forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
