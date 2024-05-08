@@ -43,6 +43,11 @@ grey_grid, mid_point, number_of_rows, number_of_columns, l_cell = calculate_rho_
 normalized_x_steps = actual_environment_size_x/number_of_rows
 normalized_y_steps = actual_environment_size_y/number_of_columns
 
+def get_xi_rho(rho_x, rho_y): 
+    # Get color value of the cell
+    xi_rho_i =  grey_grid[rho_x, rho_y]
+    return xi_rho_i # Return color value of the cell
+
 def get_grid_rho(pos):
     '''Returns the x and y indicies of the grid cell where the pos is '''
     if not (actual_environment_x_min <= pos[0] <= actual_environment_x_max and 
@@ -52,3 +57,20 @@ def get_grid_rho(pos):
     cell_x = int((pos[0] - actual_environment_x_min) // normalized_x_steps)
     cell_y = int((pos[1] - actual_environment_y_min) // normalized_y_steps)
     return [cell_x, cell_y]
+
+def get_pos_of_rho(rho):
+    # Coordinates of the center cell
+    center_x = (number_of_rows - 1) / 2
+    center_y = (number_of_columns - 1) / 2
+
+    # Calculate the difference in cell indices from the center cell
+    delta_x = rho[0] - center_x
+    delta_y = rho[1] - center_y
+    
+    # Calculate the coordinates of the center of the cell (i, j)
+    center_of_cell_x = delta_x * normalized_x_steps
+    center_of_cell_y = delta_y * normalized_y_steps
+    
+    cell_pos = [center_of_cell_x, center_of_cell_y]
+    # print(f"Cell pos: {cell_pos}")
+    return cell_pos

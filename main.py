@@ -23,7 +23,7 @@ from pxr import UsdGeom, Gf, UsdPhysics                         # pxr usd import
 from omni.isaac.core.physics_context import PhysicsContext
 import omni.isaac.core.utils.prims as prim_utils
 
-from omni.isaac.examples.user_examples.git_isaac_sim.controllers import CoolController, MyHoloController
+from omni.isaac.examples.user_examples.git_isaac_sim.controllers import DiffDriveController, HoloController
 
 from omni.isaac.wheeled_robots.controllers.wheel_base_pose_controller import WheelBasePoseController
 from omni.isaac.wheeled_robots.controllers.differential_controller import DifferentialController
@@ -39,13 +39,14 @@ from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_envi
 from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_y_min, actual_environment_y_max
 from omni.isaac.examples.user_examples.git_isaac_sim.grid import number_of_rows, number_of_columns
 from omni.isaac.examples.user_examples.git_isaac_sim.grid import normalized_x_steps, normalized_y_steps
-from omni.isaac.examples.user_examples.git_isaac_sim.grid import grey_grid, get_grid_rho
+from omni.isaac.examples.user_examples.git_isaac_sim.grid import grey_grid, get_grid_rho, get_xi_rho, get_pos_of_rho
 from omni.isaac.examples.user_examples.git_isaac_sim.environment import setup_environment
+from omni.isaac.examples.user_examples.git_isaac_sim.robots import setup_robots
 
 # Hardcode inital v_rho0_i
 robs_initial_v_rho0_i = [[0,0,0] for _ in range(num_robots)]
 
-class HelloWorld(BaseSample):
+class Main(BaseSample):
     
     def __init__(self) -> None:
         super().__init__()
@@ -59,32 +60,33 @@ class HelloWorld(BaseSample):
     def setup_scene(self):
         self.world = self.get_world()
         setup_environment(self.world)
+        setup_robots(self.world)
 
     async def setup_post_load(self):
         self._world = self.get_world()
         self.robots = [0 for _ in range(num_robots)]
         for robot_index in range(num_robots):
-            base_robot_name="fancy_robot_"
+            base_robot_name="robot_"
             self.robots[robot_index] = self._world.scene.get_object(f"{base_robot_name}{robot_index:02}")
             
         self._world.add_physics_callback("sending_actions", callback_fn=self.send_robot_actions)
         # Initialize our controller after load and the first reset
-        self._Vel_controller = CoolController()
-        self._WBP_controller = WheelBasePoseController(name="cool_controller",
+        self._Vel_controller = DiffDriveController()
+        self._WBP_controller = WheelBasePoseController(name="wheel_base_pose_controller",
                                                         open_loop_wheel_controller=
-                                                            DifferentialController(name="simple_control",
+                                                            DifferentialController(name="diff_controller",
                                                                                     wheel_radius=0.03, wheel_base=0.1125),
                                                     is_holonomic=False)
         # Made this to test difference if holonomic is set to true. To be tested
-        self._WBPholo_controller = WheelBasePoseController(name="cool_controller",
+        self._WBPholo_controller = WheelBasePoseController(name="wheel_base_pose_controller",
                                                         open_loop_wheel_controller=
-                                                            DifferentialController(name="simple_control",
+                                                            DifferentialController(name="diff_controller",
                                                                                     wheel_radius=0.03, wheel_base=0.1125),
                                                     is_holonomic=True)
         
         # Can continue to implement holonomic controller if required.
         # https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.wheeled_robots/docs/index.html
-        self._holo_controller = HolonomicController(name="holo_controller",
+        self._holo_controller = HolonomicController(name="holonomic_controller",
                                                     wheel_radius=np.array([0.04, 0.04, 0.04]),
                                                     wheel_positions=np.array([(-0.098043, 0.0006367, -0.050501),(0.05,-0.084525,-0.050501),(0.05,0.08569,-0.50501)]), 
                                                     wheel_orientations=np.array([(0,0,0,1), (0.866,0,0,-0.5), (0.866,0,0,0.5)]),
@@ -103,15 +105,37 @@ class HelloWorld(BaseSample):
     
     def get_lidar(self, robot_index):
         base_lidar_path = "/Lidar_"
-        base_lidar_parent = "/World/Fancy_Robot_"
+        base_lidar_parent = "/World/Robot_"
 
         depth = lidarInterface.get_linear_depth_data(f"{base_lidar_parent}{robot_index:02}/chassis{base_lidar_path}{robot_index:02}")
         azimuth = lidarInterface.get_azimuth_data(f"{base_lidar_parent}{robot_index:02}/chassis{base_lidar_path}{robot_index:02}")
 
         return np.array(depth), np.array(azimuth)
 
-    def velocity_commands(self, v_ent_i, v_exp_i, v_int_i):
-        v_i = v_ent_i + v_exp_i + v_int_i
+    def velocity_commands(self, robot_index):
+        raw_entering = self.shape_entering_velocity(robot_index)[0:2]
+        raw_exploration = self.shape_exploration_velocity(robot_index)
+        raw_interaction = self.interaction_velocity(robot_index)[0:2]
+        
+        # Hardcode
+        entering_weight = 1
+        exploration_weight = 2
+        interaction_weight = 0.31 # 0.05
+
+        applied_entering = np.multiply(entering_weight, raw_entering) 
+        applied_exploration = np.multiply(exploration_weight, raw_exploration)
+        applied_interaction = np.multiply(interaction_weight, raw_interaction)
+        
+        v = []
+        v.append(applied_entering)
+        # print(f"Test if weights works | Before: {v_ent_i} >> After: {np.multiply(v_ent_weight, v_ent_i)}")
+        v.append(applied_exploration)
+        v.append(applied_interaction)
+        v_i = np.sum([v[j] for j in range(len(v))], axis=0)
+        # print(f"v: {v} | v_i: {v_i} ")
+        print(f"velocity_commands()           | Rob: {robot_index} | Velocity commands: {np.round(v_i, decimals=2)}")
+        print(f"                         raw  | Ent:{np.round(raw_entering, decimals=2)} | Exp:{np.round(raw_exploration, decimals=2)} | Int:{np.round(raw_interaction, decimals=2)}")
+        print(f"                     applied  | Ent:{np.round(v[0], decimals=2)} | Exp:{np.round(v[1], decimals=2)} | Int:{np.round(v[2], decimals=2)}")
         return v_i
     
     def get_robot_pos(self, robot_index):
@@ -158,7 +182,13 @@ class HelloWorld(BaseSample):
     
     def get_robot_rho(self, robot_index):
         pos = self.get_robot_pos(robot_index)
-        return get_grid_rho(pos)
+        robot_rho = get_grid_rho(pos)
+        return robot_rho
+    
+    def get_robot_xi_rho(self, robot_index):
+        rho_x, rho_y = self.get_robot_rho(robot_index)
+        robot_xi_rho = get_xi_rho(rho_x, rho_y)
+        return robot_xi_rho
             
     def get_robot_p_rho0(self, robot_index):
         robot_rho_indcies = self.get_robot_rho(robot_index)
@@ -210,26 +240,24 @@ class HelloWorld(BaseSample):
 
         N = self.neighboring_i(robot_index)
 
-        term1 = (-1*c_1 / len(N)) * np.array(np.sum([np.multiply(np.sign([a - b for a,b in zip(self.get_robot_p_rho0(robot_index),self.get_robot_p_rho0(N[j]))]) , np.absolute([a - b for a,b in zip(self.get_robot_p_rho0(robot_index),self.get_robot_p_rho0(N[j]))]) ** alpha)
+        if len(N) == 0:
+            N.append(robot_index) 
+
+        p_rho_i = self.get_robot_p_rho0(robot_index)
+        
+        p_rho_ = []
+        for j in range(len(N)):
+            p_rho_.append(self.get_robot_p_rho0(N[j]))
+
+        term1 = (-1*c_1 / len(N)) * np.array(np.sum([np.multiply(np.sign([a - b for a,b in zip(p_rho_i, p_rho_[j])]) , np.absolute([a - b for a,b in zip(p_rho_i, p_rho_[j])]) ** alpha)
                         for j in range(len(N))], axis=0))
-
+        
         term2 = (1 / len(N)) * np.array(np.sum([robs_initial_v_rho0_i[N[j]] for j in range(len(N))], axis=0))
-
 
         v_rho0_i = term1 + term2
 
-
         robs_initial_v_rho0_i[robot_index] = v_rho0_i 
         return v_rho0_i
-    
-    def get_robot_xi_rho(self, robot_index): 
-        # get color value of the cell the robot is in
-
-        rho_i_x, rho_i_y = self.get_robot_rho(robot_index)
-        xi_rho_i =  grey_grid[rho_i_x, rho_i_y]
-
-        # Return color value of the cell the robot is in
-        return xi_rho_i
 
     def get_robot_target_rho(self, robot_index):
         curr_rho_x, curr_rho_y = self.get_robot_rho(robot_index)
@@ -238,7 +266,6 @@ class HelloWorld(BaseSample):
         
         local_min = np.min(area)
         
-
         local_min_ind = np.unravel_index(area.argmin(), area.shape)
         # print("local min ind", local_min_ind)
         target_rho = [curr_rho_x + local_min_ind[0] -1, curr_rho_y + local_min_ind[1] -1]
@@ -304,103 +331,148 @@ class HelloWorld(BaseSample):
         return mu
 
     def find_collision_points_index(self, robot_index):
-        d, a = self.get_lidar(robot_index)
+        distance, angle = self.get_lidar(robot_index)
         wall_indices = []
-        end_wall_index = []
-        collision_points_index = []
 
         # Hardcode distance check
         r_check = 1
         
         # Copy relevant indicies into wall_indices 
-        for i in range(len(d)):
-            if d[i] < r_check:
+        for i in range(len(distance)):
+            if distance[i] < r_check:
                 wall_indices.append(i)  
         
-        # Check if next angle is sequential angle. 
-        #   If not sequential then it's a gap in sensing, therefore 2 different walls. 
-        #       Add the indicies of end of walls into end_wall_index
-        expected_angle_difference = 0.00699
-        for i in range(len(wall_indices)-1):
-            if (a[wall_indices[i+1]] - a[wall_indices[i]] > expected_angle_difference):
-                end_wall_index.append(wall_indices[i])
+        if len(wall_indices) <= 0:          # If no walls, no calculations needed return empty list, wall_indices = [] 
+            print(f"find_collision_points_index() | No collision index found, wall_indicies: {wall_indices} output set to []:{np.array([])}")
+            return np.array([])
+        else:                               # If walls, do calculations
+            end_wall_index = []
+            collision_points_index = []
+
+            # Check if next angle is sequential angle. 
+            #   If not sequential then it's a gap in sensing, therefore 2 different walls. 
+            #       Add the indicies of end of walls into end_wall_index
+            expected_angle_difference = 0.00699
+            for i in range(len(wall_indices)-1):
+                if (angle[wall_indices[i+1]] - angle[wall_indices[i]] > expected_angle_difference):
+                    end_wall_index.append(wall_indices[i]) 
+            # print("end_wall_index",end_wall_index)  
 
 
-        # Find closest point of walls
-        if len(end_wall_index) > 0:
-            # Find closest point on every wall
-            for i in range(len(end_wall_index)):
-                if i == 0:
-                    # Find the index of the minimum distance to robot from of all wall_indices of first wall and add it to collision_points_index
-                    collision_points_index.append(np.argmin(np.array(d[wall_indices[0]:end_wall_index[0]]))) 
-                else:
-                    # Find the index of the minimum distance to robot from of all wall_indices of following walls + the index shift and add it to collision_points_index
-                    collision_points_index.append(np.argmin(np.array(d[end_wall_index[i-1]+1:end_wall_index[i]])) + end_wall_index[i-1]+1) 
-        # Find closest point of the 1 (one) wall
-        else:
-            # Find the index of the minimum distance to robot from of all wall_indices of the wall
-            collision_points_index = wall_indices[np.argmin(np.array(d[wall_indices[0]:wall_indices[-1]]))] # -1 is last index
-            
-        return np.array(collision_points_index)
-
+            # Find closest point of walls
+            if len(end_wall_index) > 0:
+                # Find closest point on every wall
+                for i in range(len(end_wall_index)):
+                    if i == 0:
+                        if distance[wall_indices[0]:end_wall_index[0]].size: # Added to solve "attempt to get argmin of an empty sequence" error which happens sometimes
+                            # Find the index of the minimum distance to robot from of all wall_indices of first wall and add it to collision_points_index
+                            collision_points_index.append(np.argmin(np.array(distance[wall_indices[0]:end_wall_index[0]]))) 
+                    else:
+                        # Find the index of the minimum distance to robot from of all wall_indices of following walls + the index shift and add it to collision_points_index
+                        collision_points_index.append(np.argmin(np.array(distance[end_wall_index[i-1]+1:end_wall_index[i]])) + end_wall_index[i-1]+1) 
+            # Find closest point of the 1 (one) wall
+            else:
+                # Find the index of the minimum distance to robot from of all wall_indices of the wall
+                collision_points_index = wall_indices[np.argmin(np.array(distance[wall_indices[0]:wall_indices[-1]]))] # -1 is last index
+                
+            # print("collision_points_index", collision_points_index) 
+            return np.array(collision_points_index)
+        
     def find_collision_points(self, robot_index):
-        d, a = self.get_lidar(robot_index)
-        curr_pos = self.get_robot_pos(robot_index)
-        curr_ori = self.get_robot_ori_euler(robot_index)
-        coll_ind = self.find_collision_points_index(robot_index)
-
+        coll_ind = np.array(self.find_collision_points_index(robot_index))
         obstacle_pos = []
 
-        for i in range(len(coll_ind)):
-            obstacle_pos.append( [ float(curr_pos[0] + d[coll_ind[i]]*np.cos(curr_ori[2] + a[coll_ind[i]])) , float(curr_pos[1] + d[coll_ind[i]]*np.sin(curr_ori[2] + a[coll_ind[i]])) , 0.0 ] )
+        # print(f"find_collision_points()       | coll_ind: {coll_ind} | coll_ind.size {coll_ind.size}")
+        if not coll_ind.size:           # If no walls, return empty array # Same as if len(coll_ind) <= 0
+            print(f"find_collision_points()       | No collision points found, output set to []")
+            return np.array(obstacle_pos)
+        
+        # If walls only then do calculations
+        distance, angle = self.get_lidar(robot_index)
+        curr_pos = self.get_robot_pos(robot_index)
+        curr_ori = self.get_robot_ori_euler(robot_index)
 
+        if coll_ind.size == 1: # Added to prevent error where sometimes coll_ind does exist but is a float instead of an array of size 1
+            obstacle_pos.append( [ float(curr_pos[0] + distance[coll_ind]*np.cos(curr_ori[2] + angle[coll_ind])) , float(curr_pos[1] + distance[coll_ind]*np.sin(curr_ori[2] + angle[coll_ind])) , 0.0 ] )
+        else:
+            for i in range(coll_ind.size): # Should work same as for i in range(len(coll_ind)):
+                obstacle_pos.append( [ float(curr_pos[0] + distance[coll_ind[i]]*np.cos(curr_ori[2] + angle[coll_ind[i]])) , float(curr_pos[1] + distance[coll_ind[i]]*np.sin(curr_ori[2] + angle[coll_ind[i]])) , 0.0 ] )
+                
+        print(f" | Obstacles:\n{np.array(obstacle_pos).round(decimals=2)}") # find_collision_points()       \n|
+        
         return np.array(obstacle_pos)
  
     def interaction_velocity(self, robot_index):
+        
+        N = self.neighboring_i(robot_index)
+        O = self.find_collision_points(robot_index)
+        
+        if (len(O) <= 0) and (len(N) <= 0):     # Neither N nor O so no calculations needed return [0.0, 0.0, 0.0]
+            print(f"interaction_velocity()        | Neither Neighbours NOR Collision points, v_int_i set to [0.0, 0.0, 0.0]")
+            v_int_i = [0.0, 0.0, 0.0]
+            return np.array(v_int_i)
+        
+        # At least one of N exist O so calculate values
         # Hardcode
         k_3 = 25    # 20,25,30 in Paper
-
-        N = self.neighboring_i(robot_index)
-
-        # Selected the position of center of cell the robot is currently in
-        p_i = self.get_robot_pos(robot_index) # get_robot_p_rho0
-
-        v_i = self.get_robot_vel(robot_index)
-
-        O = self.find_collision_points(robot_index)
-
+        
         p = []
-        for j in range(len(N)+len(O)-1):
-            if j < len(N):
-                p.append(self.get_robot_pos(N[j])) # get_robot_p_rho0
-            else:
-                p.append(O[j-len(N)])
+        
+        if (len(N) <= 0):               # If no N, only calculate term1 and set term2 to [0.0, 0.0, 0.0]
+            print(f"interaction_velocity()        | No Neighbours, only Collision points found, v_int_i term2 set to [0.0, 0.0, 0.0]")
+            length_sum = len(O) # used to be len(O)-1 
+            for j in range(length_sum):
+                p.append(O[j]) 
+            term2 = [0.0, 0.0, 0.0]
+        else:                           # If N, calculate both term1 and term2
+            if (len(O) <= 0):               # If no O and only N, change length of sum, length_sum, and collision point positions, p.
+                print(f"interaction_velocity()        | Only Neighbours, no Collision points")
+                length_sum = len(N)-1
+                for j in range(length_sum):
+                    p.append(self.get_robot_pos(N[j])) 
+            else:                           # If both O and N, change length of sum, length_sum, and collision point positions, p.
+                print(f"interaction_velocity()        | Neighbours AND Collision points found")
+                length_sum = len(N)+len(O)-1
+                for j in range(length_sum):
+                    if j < len(N):
+                        p.append(self.get_robot_pos(N[j]))
+                    else:
+                        p.append(O[j-len(N)])
+
+            v_i = self.get_robot_vel(robot_index)
+
+            term2 = np.array(np.sum([
+                                np.multiply(
+                                    (1 / len(N)) , [a - b for a,b in zip(v_i, self.get_robot_vel(N[j]))]
+                                )
+                            for j in range(len(N))], axis=0)
+                            )
 
         p = np.array(p)
-       
 
-        # Includes O_i, the set of collision points of robot i.
-        term1 = np.array(np.sum([
-                                np.multiply(
-                                    self.mu_weight( 
-                                        np.linalg.norm( [a - b for a,b in zip(p_i, p[j])] ) 
-                                    ) 
-                                    , [a - b for a,b in zip(p_i, p[j])]
-                                )
-                        for j in range(len(N)+len(O)-1)], axis=0)
-                )
+        if len(p) <= 0:         # If error with find_collision_points_index, set term1 to [0.0, 0.0, 0.0]
+            print(f"interaction_velocity()        | Error with calculating term1, v_int_i term1 set to [0.0, 0.0, 0.0]")
+            term1 = [0.0, 0.0, 0.0]
+        else:                   # If no error calculate term1
+            # Selected the position of center of cell the robot is currently in
+            p_i = self.get_robot_pos(robot_index) # get_robot_p_rho0
 
-        term2 = np.array(np.sum([
-                            np.multiply(
-                                (1 / len(N)) , [a - b for a,b in zip(v_i, self.get_robot_vel(N[j]))]
-                            )
-                        for j in range(len(N))], axis=0)
-                        )
+            # print(f"len_sum: {length_sum} | p:{p} ")
+            # print(f"mu {self.mu_weight(np.linalg.norm( [a - b for a,b in zip(p_i, p[0])] ))} | subtraction: {[a - b for a,b in zip(p_i, p[0])]}")
+            term1 = np.array(np.sum([
+                                    np.multiply(
+                                        self.mu_weight( 
+                                            np.linalg.norm( [a - b for a,b in zip(p_i, p[j])] ) 
+                                        ) 
+                                        , [a - b for a,b in zip(p_i, p[j])]
+                                    )
+                            for j in range(length_sum)], axis=0)
+                    )
         
-
-        firstterm = np.multiply(term1,k_3)
+        firstterm = np.multiply(term1, k_3)
         v_int_i = ([a - b for a,b in zip(firstterm, term2)])
-
+        # print(f"                              | v_int_i: {np.round(v_int_i, decimals=2)} |")
+        # print(f"                              | term1: {np.round(term1, decimals=2)} | term2: {np.round(term2, decimals=2)}")
         return np.array(v_int_i)
 
     def psi_weight(self, arg):
@@ -412,20 +484,27 @@ class HelloWorld(BaseSample):
             return 0
 
     def in_shape_boundary(self, robot_index):
-        curr_rho_x, curr_rho_y = self.get_robot_rho(robot_index)
+        # if: robot i is close to the boundary of the shape so that there are non-black cells within the sensing radius r_sense
+            # return False
+        # else:
+            # return True 
 
+        curr_rho_x, curr_rho_y = self.get_robot_rho(robot_index)
+    
         in_shape = False
         
         # # Radius r_sense means this number of cells 
 
-        # Value too large for now
+        # Real value too large for now
         # r_sense_cell_x = np.int(r_sense/normalized_x_steps)
         # r_sense_cell_y = np.int(r_sense/normalized_y_steps)
+        # print(f"r_sense_cell x:{r_sense_cell_x} y:{r_sense_cell_x}")
         
-        # Using radius of 1 cell for now
-        r_sense_cell_x = np.int(1)
-        r_sense_cell_y = np.int(1)
-
+        # Hardcode - using radius of cell_sense for now
+        cell_sense = 1
+        r_sense_cell_x = np.int(cell_sense)
+        r_sense_cell_y = np.int(cell_sense)
+        # print(f"r_sense_cell x:{r_sense_cell_x} y:{r_sense_cell_x}")
 
         # neighbouring cells within radius r_sense 
         area = grey_grid[curr_rho_x-r_sense_cell_x:curr_rho_x+r_sense_cell_x+1, curr_rho_y-r_sense_cell_y:curr_rho_y+r_sense_cell_y+1]
@@ -439,7 +518,9 @@ class HelloWorld(BaseSample):
         elif local_max_color == 0:
             in_shape = True
         
-        return in_shape
+        print(f"in_shape_boundary()           | Rob: {robot_index} | in_shape?: {in_shape} | max_color: {np.round(local_max_color,2)} | r_sense_cells x:{r_sense_cell_x} y:{r_sense_cell_x} ")
+        print(f" | area:\n{np.round(area,2)}\n")
+        return in_shape, r_sense_cell_x, r_sense_cell_y, area
 
     def occupied_cells(self):
         # return rho of occupied cells, considering radius of robot r_body
@@ -475,96 +556,227 @@ class HelloWorld(BaseSample):
                     cell_y_center = (j - center_j) * y_cellsize
 
                     # Check if any part of the robot covers the center of the cell. Factor sqrt(2) added to cover edge cases if robot perfectly between 4 cells
-                    if np.sqrt((cell_x_center - x_center) ** 2 + (cell_y_center - y_center) ** 2) <= np.sqrt(2)*r_body: 
+                    # Paper wants to count occupied if cell_center within r_avoid/2 of any robot. If want cells occupied by body: np.sqrt(2)*r_body
+                    if np.sqrt((cell_x_center - x_center) ** 2 + (cell_y_center - y_center) ** 2) <= r_avoid/2: 
                         occupied.add((i, j))
 
-        return list(occupied)    
-
+        print(f"occupied_cells()              | Occupied cells:\n {list(occupied)}\n")
+        return list(occupied)
+    
     def neighbouring_cells(self, robot_index):
-        
-        in_shape = self.in_shape_boundary(robot_index)
+        in_shape, r_sense_cell_x, r_sense_cell_y, area  = self.in_shape_boundary(robot_index)
         M_cells = []
 
         curr_rho_x, curr_rho_y = self.get_robot_rho(robot_index)
-
-        # radius r_sense means this number of cells 
-        # r_sense_cell = np.int(np.ceil(r_sense/normalized_x_steps))
-        # r_sense_cell = np.int(r_sense/normalized_x_steps)
-        r_sense_cell = np.int(1)
-
-        # neighbouring cells within radius r_sense 
-        area = grey_grid[curr_rho_x-r_sense_cell:curr_rho_x+r_sense_cell+1, curr_rho_y-r_sense_cell:curr_rho_y+r_sense_cell+1]
-
-        occupied_cells = self.occupied_cells()
-        #occupied_x, occupied_y = [1,2]
-
-        #M_cells_debug = []
 
         if in_shape == False:
             for i in range(len(area)):
                 for j in range(len(area)):
                     # If neighbouring cell within radius r_sense is black, append it to M_cells 
                     if area[i , j] == 0:
-                        M_cells.append([curr_rho_x-r_sense_cell+i , curr_rho_y-r_sense_cell+j])
+                        M_cells.append([curr_rho_x-r_sense_cell_x+i , curr_rho_y-r_sense_cell_y+j])
 
         elif in_shape == True:
+            
+            occupied_cells = self.occupied_cells()
+
+            M_cells_debug = []
+
             for i in range(len(area)):
                 for j in range(len(area)):
                     # If neighbouring cell within radius r_sense is black...
                     if area[i , j] == 0:
                             # AND if neighbouring cell within radius r_sense is unoccupied, append it to M_cells
-                            #M_cells_debug.append([curr_rho_x-r_sense_cell+i , curr_rho_y-r_sense_cell+j])
-                            if ((curr_rho_x-r_sense_cell+i, curr_rho_y-r_sense_cell+j) not in occupied_cells):
-                                M_cells.append([curr_rho_x-r_sense_cell+i , curr_rho_y-r_sense_cell+j])
-        
-        return M_cells
+                            M_cells_debug.append([curr_rho_x-r_sense_cell_x+i , curr_rho_y-r_sense_cell_y+j])
+                            if ((curr_rho_x-r_sense_cell_x+i, curr_rho_y-r_sense_cell_y+j) not in occupied_cells):
+                                M_cells.append([curr_rho_x-r_sense_cell_x+i , curr_rho_y-r_sense_cell_y+j])
 
+        print(f"neighbouring_cells()          | Rob: {robot_index} | include occupied?: {in_shape} |  M_cells: {M_cells}")
+        # print("M_cells_Debug:\n",M_cells_debug)
+        return M_cells
+    
     def shape_exploration_velocity(self, robot_index):
+        # To optimize code, first check if any neighboring valid cells. If found, only then set parameters, call nessesary functions, and perform any calculations
+        
+        M_i_neigh = self.neighbouring_cells(robot_index)
+        
+        if len(M_i_neigh) <= 0:
+            print(f"shape_exploration_velocity()  | No valid cells found, v_exp_i set to [0.0, 0.0]")
+            v_exp_i = [0.0, 0.0]
+            return v_exp_i
+        
         # Hardcode
         sigma_1 = 10    # 10 or 5 in paper
         sigma_2 = 20    # 20 or 15 in paper
-        k_2 = sigma_1 if (not self.in_shape_boundary(robot_index)) else sigma_2
-        M_i_neigh = self.neighbouring_cells(robot_index)
+        in_shape, _, _, _  = self.in_shape_boundary(robot_index)
+        k_2 = sigma_1 if (not in_shape) else sigma_2
+    
+        p_rhos = []
+        for j in range(len(M_i_neigh)):
+            p_rhos.append(get_pos_of_rho(M_i_neigh[j]))
         
-        p_i = self.get_robot_pos(robot_index)
-
-        # numerator = sum([k2 * psi(np.linalg.norm(pp - robot_position) / r_sense) * (pp - robot_position) for pp in M_i_neigh])
-        top = sum([k_2 * self.psi_weight(np.linalg.norm(pp - p_i) / r_sense) * (pp - p_i) for pp in M_i_neigh])
-
-        # denominator = sum([self.psi_weight(np.linalg.norm(pp - p_i) / r_sense) for pp in M_i_neigh])
-        bottom = sum([self.psi_weight(np.linalg.norm(pp - p_i) / r_sense) for pp in M_i_neigh])
-
-        # Compute the exploration velocity v_exp_i
-        # v_exp_i = numerator / denominator if denominator != 0 else np.zeros_like(p_i)
-        v_exp_i = top / bottom
+        p_i = self.get_robot_pos(robot_index)[0:2]
+        
+        top = sum([k_2 * np.multiply(
+                            self.psi_weight(np.linalg.norm([a - b for a,b in zip(p_rhos[rho], p_i)]) / r_sense ) 
+                            , ([a - b for a,b in zip(p_rhos[rho], p_i)])    
+                        ) 
+                for rho in range(len(M_i_neigh))])
+        
+        bottom = sum([self.psi_weight( np.linalg.norm([a - b for a,b in zip(p_rhos[rho], p_i)]) / r_sense ) 
+                    for rho in range(len(M_i_neigh))])
+        
+        v_exp_i = np.divide(np.array(top), np.array(bottom), out=np.zeros_like(top), where=bottom!=0.0)
+         
         return v_exp_i
 
     def send_robot_actions(self, step_size):
+    ##### Start of Print Test Area #####
 
-    # Start Interaction:  
-        # v_x, v_y, _ = self.interaction_velocity(0)
-        # curr_rot = self.get_robot_ori_euler(0)
-        # kf = 0.02
-        # forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
-        # ang = self.mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
-        # ang = np.deg2rad(ang)
-        # ka = 0.8
-        # angle = ka * (ang) 
-        # self.robots[0].apply_action(self._Vel_controller.forward(command=[forward, angle]))
-    # End Interaction
+    # Start Velocity command:
 
-    # Start Entering:
         for robot_index in range(num_robots): # num_robots
-            v_x, v_y, _ = self.shape_entering_velocity(robot_index)
+            v_x, v_y = self.velocity_commands(robot_index) 
+            curr_rot = self.get_robot_ori_euler(robot_index)
+
             kf = 0.02
             forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
             ka = 0.8
-            curr_rot = self.get_robot_ori_euler(robot_index)
-
             ang = self.mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
             ang = np.deg2rad(ang)
             angle = ka * (ang) # np.arctan2(v_y,v_x) - curr_rot[2]
-            self.robots[robot_index].apply_action(self._Vel_controller.forward(command=[forward, angle]))      
-    # End Entering 
+            self.robots[robot_index].apply_action(self._Vel_controller.forward(command=[forward, angle]))
 
+    # End Velocity command
+
+
+    # Start Exploration:
+
+        # for robot_index in range(1):  
+        #     if MEASURE_PERFORMANCE:
+        #         start_time = time.time()
+
+        #     exp_v_x, exp_v_y = self.shape_exploration_velocity(robot_index)
+        #     ent_v_x, ent_v_y, _ = self.shape_entering_velocity(robot_index)
+        #     v_x = exp_v_x + ent_v_x
+        #     v_y = exp_v_y + ent_v_y
+
+
+        #     if MEASURE_PERFORMANCE:
+        #         shape_exploration_time = time.time() - start_time
+        #         global shape_exploration_time_total
+        #         shape_exploration_time_total += shape_exploration_time
+        #         start_time = time.time()
+
+        #     kf = 0.02
+        #     forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
+        #     ka = 0.8
+        #     curr_rot = self.get_robot_ori_euler(robot_index)
+            
+        #     if MEASURE_PERFORMANCE:
+        #         get_rotation_time = time.time() - start_time
+        #         global get_rotation_time_total
+        #         get_rotation_time_total += get_rotation_time
+        #         start_time = time.time()
+            
+            
+        #     ang = self.mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
+        #     ang = np.deg2rad(ang)
+        #     angle = ka * (ang) # np.arctan2(v_y,v_x) - curr_rot[2]
+        #     self.robots[robot_index].apply_action(self._Vel_controller.forward(command=[forward, angle]))      
+
+        #     if MEASURE_PERFORMANCE:
+        #         apply_action_time = time.time() - start_time
+        #         global apply_action_time_total
+        #         apply_action_time_total += apply_action_time
+        #         print("Individual times: \n" +
+        #               f"Shape exploration time {shape_exploration_time} \n" +
+        #               f"get rotation time {get_rotation_time} \n" +
+        #               f"Apply action time {apply_action_time} \n")           
+        #         print("Cumulative times: \n" +
+        #               f"Shape exploration total {shape_exploration_time_total} \n" +
+        #               f"get rotation total {get_rotation_time_total} \n" +
+        #               f"Apply action total {apply_action_time_total} \n")  
+
+    # End Exploration:
+
+    # Start Interaction: 
+     
+        # for robot_index in range(num_robots):
+        #     v_x, v_y, _ = self.interaction_velocity(robot_index)
+        #     curr_rot = self.get_robot_ori_euler(robot_index)
+        #     kf = 0.02
+        #     forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
+        #     ang = self.mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
+        #     ang = np.deg2rad(ang)
+        #     ka = 0.8
+        #     angle = ka * (ang) 
+        #     self.robots[robot_index].apply_action(self._Vel_controller.forward(command=[forward, angle]))
+    
+    # End Interaction
+
+    # Start Entering:
+
+        # for robot_index in range(num_robots): # 
+        #     if MEASURE_PERFORMANCE:
+        #         start_time = time.time()
+
+        #     v_x, v_y, _ = self.shape_entering_velocity(robot_index)
+
+        #     if MEASURE_PERFORMANCE:
+        #         shape_entering_time = time.time() - start_time
+        #         global shape_entering_time_total
+        #         shape_entering_time_total += shape_entering_time
+        #         start_time = time.time()
+
+        #     kf = 0.02
+        #     forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
+        #     ka = 0.8
+        #     curr_rot = self.get_robot_ori_euler(robot_index)
+            
+        #     if MEASURE_PERFORMANCE:
+        #         get_rotation_time = time.time() - start_time
+        #         global get_rotation_time_total
+        #         get_rotation_time_total += get_rotation_time
+        #         start_time = time.time()
+            
+        #     # a = targetA - sourceA
+        #     # Version 1:
+        #     # a = np.arctan2(v_y,v_x) - curr_rot[2]
+        #     # if a > np.pi:
+        #     #     a -= 2*np.pi 
+        #     # if a < -np.pi:
+        #     #     a += 2*np.pi
+        #     # Version 2:
+        #     # Custom mod function: mod(a, n) -> a - floor(a/n) * n
+        #     ang = self.mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
+        #     ang = np.deg2rad(ang)
+        #     angle = ka * (ang) # np.arctan2(v_y,v_x) - curr_rot[2]
+        #     # if robot_index == 2:
+        #         # print("Rob", robot_index, ":\n Target angle", np.arctan2(v_y,v_x).round(decimals=2),"rads", np.rad2deg(np.arctan2(v_y,v_x)).round(decimals=2),"deg","\n Current angle:", np.array(curr_rot[2]).round(decimals=2),"rads", np.rad2deg(curr_rot[2]).round(decimals=2),"deg", "\n Difference:", np.array((np.arctan2(v_y,v_x) - curr_rot[2])).round(decimals=2), "rads", np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]).round(decimals=2),"deg")
+        #         # print("Rob", robot_index, "Shp Ent Vel:", v_x, v_y)
+        #         # print("Rob", robot_index, "PD ctrllr:", forward, angle)
+
+        #     # b = self.in_shape_boundary(robot_index) # in_shape_boundary() works
+        #     # # nc = self.neighbouring_cells(robot_index) # neighbouring_cells() if in_shape_boundary() == False works
+        #     # oc = self.occupied_cells() # occupied_cells() works
+        #     # # nc = self.neighbouring_cells(robot_index) # neighbouring_cells() if in_shape_boundary() == True works
+        #     # nc = self.neighbouring_cells(robot_index) # neighbouring_cells() works
+        #     self.robots[robot_index].apply_action(self._Vel_controller.forward(command=[forward, angle]))      
+
+        #     if MEASURE_PERFORMANCE:
+        #         apply_action_time = time.time() - start_time
+        #         global apply_action_time_total
+        #         apply_action_time_total += apply_action_time
+        #         print("Individual times: \n" +
+        #               f"Shape entering time {shape_entering_time} \n" +
+        #               f"get rotation time {get_rotation_time} \n" +
+        #               f"Apply action time {apply_action_time} \n")           
+        #         print("Cumulative times: \n" +
+        #               f"Shape entering total {shape_entering_time_total} \n" +
+        #               f"get rotation total {get_rotation_time_total} \n" +
+        #               f"Apply action total {apply_action_time_total} \n")    
+         
+    # End Entering 
         return
+    

@@ -2,9 +2,9 @@ from omni.isaac.core.controllers import BaseController
 from omni.isaac.core.utils.types import ArticulationAction
 
 # Used for velocity control
-class CoolController(BaseController):
+class DiffDriveController(BaseController):
     def __init__(self):
-        super().__init__(name="my_cool_controller")
+        super().__init__(name="diff_drive_controller")
        # An open loop controller that uses a unicycle model
         self._wheel_radius = 0.03
         self._wheel_base = 0.1125
@@ -20,9 +20,9 @@ class CoolController(BaseController):
         return ArticulationAction(joint_velocities=joint_velocities)
 
 # Trying to convert the input: vector velocity to output steps doable by robot
-class MyHoloController(BaseController):
+class HoloController(BaseController):
     def __init__(self):
-        super().__init__(name="my_holo_controller")
+        super().__init__(name="holo_controller")
         self._wheel_radius = 0.03
         self._wheel_base = 0.1125
         return
