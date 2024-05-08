@@ -21,7 +21,7 @@ from omni.isaac.range_sensor import _range_sensor               # Imports the py
 from pxr import UsdGeom, Gf, UsdPhysics                         # pxr usd imports used to create the cube
 
 from omni.isaac.core.physics_context import PhysicsContext
-# import omni.isaac.core.utils.prims as prim_utils
+import omni.isaac.core.utils.prims as prim_utils
 
 from omni.isaac.examples.user_examples.controllers import CoolController, MyHoloController
 
@@ -57,14 +57,16 @@ class HelloWorld(BaseSample):
         return res
     
     def setup_scene(self):
-        _world = self.get_world()
-        setup_environment(_world)
+        self.world = self.get_world()
+        setup_environment(self.world)
 
     async def setup_post_load(self):
+        self._world = self.get_world()
         self.robots = [0 for _ in range(num_robots)]
         for robot_index in range(num_robots):
             base_robot_name="fancy_robot_"
             self.robots[robot_index] = self._world.scene.get_object(f"{base_robot_name}{robot_index:02}")
+            
         self._world.add_physics_callback("sending_actions", callback_fn=self.send_robot_actions)
         # Initialize our controller after load and the first reset
         self._Vel_controller = CoolController()
