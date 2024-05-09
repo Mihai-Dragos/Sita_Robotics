@@ -42,6 +42,7 @@ from omni.isaac.examples.user_examples.git_isaac_sim.grid import normalized_x_st
 from omni.isaac.examples.user_examples.git_isaac_sim.grid import grey_grid, get_grid_rho, get_xi_rho, get_pos_of_rho
 from omni.isaac.examples.user_examples.git_isaac_sim.environment import setup_environment
 from omni.isaac.examples.user_examples.git_isaac_sim.robots import setup_robots
+from omni.isaac.examples.user_examples.git_isaac_sim.util import log, performance_timestamp
 
 # Hardcode inital v_rho0_i
 robs_initial_v_rho0_i = [[0,0,0] for _ in range(num_robots)]
@@ -132,10 +133,11 @@ class Main(BaseSample):
         v.append(applied_exploration)
         v.append(applied_interaction)
         v_i = np.sum([v[j] for j in range(len(v))], axis=0)
-        # print(f"v: {v} | v_i: {v_i} ")
-        print(f"velocity_commands()           | Rob: {robot_index} | Velocity commands: {np.round(v_i, decimals=2)}")
-        print(f"                         raw  | Ent:{np.round(raw_entering, decimals=2)} | Exp:{np.round(raw_exploration, decimals=2)} | Int:{np.round(raw_interaction, decimals=2)}")
-        print(f"                     applied  | Ent:{np.round(v[0], decimals=2)} | Exp:{np.round(v[1], decimals=2)} | Int:{np.round(v[2], decimals=2)}")
+        
+        log("velocity_commands()", f"Rob: {robot_index} | Velocity commands: {np.round(v_i, decimals=2)}")
+        log("raw", f"Ent:{np.round(raw_entering, decimals=2)} | Exp:{np.round(raw_exploration, decimals=2)} | Int:{np.round(raw_interaction, decimals=2)}", True)
+        log("applied", f"Ent:{np.round(v[0], decimals=2)} | Exp:{np.round(v[1], decimals=2)} | Int:{np.round(v[2], decimals=2)}", True)
+
         return v_i
     
     def get_robot_pos(self, robot_index):
@@ -271,7 +273,7 @@ class Main(BaseSample):
         target_rho = [curr_rho_x + local_min_ind[0] -1, curr_rho_y + local_min_ind[1] -1]
         
         if (local_min == 0) & (np.array_equal(local_min_ind,[1,1])):
-            print("\n",robot_index,"IN MIDDLE, STOP ! get_robot_target_rho()\n")
+            log("get_robot_target_rho()", f"robot {robot_index} IN MIDDLE, STOP !")
 
         return target_rho
 
@@ -343,7 +345,7 @@ class Main(BaseSample):
                 wall_indices.append(i)  
         
         if len(wall_indices) <= 0:          # If no walls, no calculations needed return empty list, wall_indices = [] 
-            print(f"find_collision_points_index() | No collision index found, wall_indicies: {wall_indices} output set to []:{np.array([])}")
+            log("find_collision_points_index()", f"No collision index found, wall_indicies: {wall_indices} output set to []:{np.array([])}")
             return np.array([])
         else:                               # If walls, do calculations
             end_wall_index = []
@@ -384,7 +386,7 @@ class Main(BaseSample):
 
         # print(f"find_collision_points()       | coll_ind: {coll_ind} | coll_ind.size {coll_ind.size}")
         if not coll_ind.size:           # If no walls, return empty array # Same as if len(coll_ind) <= 0
-            print(f"find_collision_points()       | No collision points found, output set to []")
+            log("find_collision_points()", "No collision points found, output set to []")
             return np.array(obstacle_pos)
         
         # If walls only then do calculations
@@ -398,7 +400,7 @@ class Main(BaseSample):
             for i in range(coll_ind.size): # Should work same as for i in range(len(coll_ind)):
                 obstacle_pos.append( [ float(curr_pos[0] + distance[coll_ind[i]]*np.cos(curr_ori[2] + angle[coll_ind[i]])) , float(curr_pos[1] + distance[coll_ind[i]]*np.sin(curr_ori[2] + angle[coll_ind[i]])) , 0.0 ] )
                 
-        print(f" | Obstacles:\n{np.array(obstacle_pos).round(decimals=2)}") # find_collision_points()       \n|
+        log("find_collision_points()", f"Obstacles:\n{np.array(obstacle_pos).round(decimals=2)}")
         
         return np.array(obstacle_pos)
  
@@ -408,7 +410,7 @@ class Main(BaseSample):
         O = self.find_collision_points(robot_index)
         
         if (len(O) <= 0) and (len(N) <= 0):     # Neither N nor O so no calculations needed return [0.0, 0.0, 0.0]
-            print(f"interaction_velocity()        | Neither Neighbours NOR Collision points, v_int_i set to [0.0, 0.0, 0.0]")
+            log("interaction_velocity()", f"Neither Neighbours NOR Collision points, v_int_i set to [0.0, 0.0, 0.0]")
             v_int_i = [0.0, 0.0, 0.0]
             return np.array(v_int_i)
         
@@ -419,19 +421,19 @@ class Main(BaseSample):
         p = []
         
         if (len(N) <= 0):               # If no N, only calculate term1 and set term2 to [0.0, 0.0, 0.0]
-            print(f"interaction_velocity()        | No Neighbours, only Collision points found, v_int_i term2 set to [0.0, 0.0, 0.0]")
+            log("interaction_velocity()", f"No Neighbours, only Collision points found, v_int_i term2 set to [0.0, 0.0, 0.0]")
             length_sum = len(O) # used to be len(O)-1 
             for j in range(length_sum):
                 p.append(O[j]) 
             term2 = [0.0, 0.0, 0.0]
         else:                           # If N, calculate both term1 and term2
             if (len(O) <= 0):               # If no O and only N, change length of sum, length_sum, and collision point positions, p.
-                print(f"interaction_velocity()        | Only Neighbours, no Collision points")
+                log("interaction_velocity()", f"Only Neighbours, no Collision points")
                 length_sum = len(N)-1
                 for j in range(length_sum):
                     p.append(self.get_robot_pos(N[j])) 
             else:                           # If both O and N, change length of sum, length_sum, and collision point positions, p.
-                print(f"interaction_velocity()        | Neighbours AND Collision points found")
+                log("interaction_velocity()", f"Neighbours AND Collision points found")
                 length_sum = len(N)+len(O)-1
                 for j in range(length_sum):
                     if j < len(N):
@@ -451,7 +453,7 @@ class Main(BaseSample):
         p = np.array(p)
 
         if len(p) <= 0:         # If error with find_collision_points_index, set term1 to [0.0, 0.0, 0.0]
-            print(f"interaction_velocity()        | Error with calculating term1, v_int_i term1 set to [0.0, 0.0, 0.0]")
+            log("interaction_velocity()", f"Error with calculating term1, v_int_i term1 set to [0.0, 0.0, 0.0]")
             term1 = [0.0, 0.0, 0.0]
         else:                   # If no error calculate term1
             # Selected the position of center of cell the robot is currently in
@@ -518,8 +520,8 @@ class Main(BaseSample):
         elif local_max_color == 0:
             in_shape = True
         
-        print(f"in_shape_boundary()           | Rob: {robot_index} | in_shape?: {in_shape} | max_color: {np.round(local_max_color,2)} | r_sense_cells x:{r_sense_cell_x} y:{r_sense_cell_x} ")
-        print(f" | area:\n{np.round(area,2)}\n")
+        log("in_shape_boundary()", f"Rob: {robot_index} | in_shape?: {in_shape} | max_color: {np.round(local_max_color,2)} | r_sense_cells x:{r_sense_cell_x} y:{r_sense_cell_x} ")
+        log("", f" | area:\n{np.round(area,2)}\n")
         return in_shape, r_sense_cell_x, r_sense_cell_y, area
 
     def occupied_cells(self):
@@ -560,7 +562,7 @@ class Main(BaseSample):
                     if np.sqrt((cell_x_center - x_center) ** 2 + (cell_y_center - y_center) ** 2) <= r_avoid/2: 
                         occupied.add((i, j))
 
-        print(f"occupied_cells()              | Occupied cells:\n {list(occupied)}\n")
+        log("occupied_cells()", f"Occupied cells:\n {list(occupied)}\n")
         return list(occupied)
     
     def neighbouring_cells(self, robot_index):
@@ -591,7 +593,7 @@ class Main(BaseSample):
                             if ((curr_rho_x-r_sense_cell_x+i, curr_rho_y-r_sense_cell_y+j) not in occupied_cells):
                                 M_cells.append([curr_rho_x-r_sense_cell_x+i , curr_rho_y-r_sense_cell_y+j])
 
-        print(f"neighbouring_cells()          | Rob: {robot_index} | include occupied?: {in_shape} |  M_cells: {M_cells}")
+        log("neighbouring_cells()", f"Rob: {robot_index} | include occupied?: {in_shape} |  M_cells: {M_cells}")
         # print("M_cells_Debug:\n",M_cells_debug)
         return M_cells
     
@@ -601,7 +603,7 @@ class Main(BaseSample):
         M_i_neigh = self.neighbouring_cells(robot_index)
         
         if len(M_i_neigh) <= 0:
-            print(f"shape_exploration_velocity()  | No valid cells found, v_exp_i set to [0.0, 0.0]")
+            log("shape_exploration_velocity()", f"No valid cells found, v_exp_i set to [0.0, 0.0]")
             v_exp_i = [0.0, 0.0]
             return v_exp_i
         
@@ -653,50 +655,28 @@ class Main(BaseSample):
     # Start Exploration:
 
         # for robot_index in range(1):  
-        #     if MEASURE_PERFORMANCE:
-        #         start_time = time.time()
+        #     performance_timestamp("") # Reset the timestamp time for time stamp measure section
 
         #     exp_v_x, exp_v_y = self.shape_exploration_velocity(robot_index)
         #     ent_v_x, ent_v_y, _ = self.shape_entering_velocity(robot_index)
         #     v_x = exp_v_x + ent_v_x
         #     v_y = exp_v_y + ent_v_y
 
-
-        #     if MEASURE_PERFORMANCE:
-        #         shape_exploration_time = time.time() - start_time
-        #         global shape_exploration_time_total
-        #         shape_exploration_time_total += shape_exploration_time
-        #         start_time = time.time()
+        #     performance_timestamp("shape exploration")
 
         #     kf = 0.02
         #     forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
         #     ka = 0.8
         #     curr_rot = self.get_robot_ori_euler(robot_index)
             
-        #     if MEASURE_PERFORMANCE:
-        #         get_rotation_time = time.time() - start_time
-        #         global get_rotation_time_total
-        #         get_rotation_time_total += get_rotation_time
-        #         start_time = time.time()
-            
+        #     performance_timestamp("robot ori euler")            
             
         #     ang = self.mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
         #     ang = np.deg2rad(ang)
         #     angle = ka * (ang) # np.arctan2(v_y,v_x) - curr_rot[2]
-        #     self.robots[robot_index].apply_action(self._Vel_controller.forward(command=[forward, angle]))      
-
-        #     if MEASURE_PERFORMANCE:
-        #         apply_action_time = time.time() - start_time
-        #         global apply_action_time_total
-        #         apply_action_time_total += apply_action_time
-        #         print("Individual times: \n" +
-        #               f"Shape exploration time {shape_exploration_time} \n" +
-        #               f"get rotation time {get_rotation_time} \n" +
-        #               f"Apply action time {apply_action_time} \n")           
-        #         print("Cumulative times: \n" +
-        #               f"Shape exploration total {shape_exploration_time_total} \n" +
-        #               f"get rotation total {get_rotation_time_total} \n" +
-        #               f"Apply action total {apply_action_time_total} \n")  
+        #     self.robots[robot_index].apply_action(self._Vel_controller.forward(command=[forward, angle]))
+            
+        #     performance_timestamp("apply robot action")
 
     # End Exploration:
 
@@ -718,27 +698,18 @@ class Main(BaseSample):
     # Start Entering:
 
         # for robot_index in range(num_robots): # 
-        #     if MEASURE_PERFORMANCE:
-        #         start_time = time.time()
+        #     performance_timestamp("") # Reset the timestamp time for time stamp measure section
 
         #     v_x, v_y, _ = self.shape_entering_velocity(robot_index)
 
-        #     if MEASURE_PERFORMANCE:
-        #         shape_entering_time = time.time() - start_time
-        #         global shape_entering_time_total
-        #         shape_entering_time_total += shape_entering_time
-        #         start_time = time.time()
+        #     performance_timestamp("shape entering")
 
         #     kf = 0.02
         #     forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
         #     ka = 0.8
         #     curr_rot = self.get_robot_ori_euler(robot_index)
             
-        #     if MEASURE_PERFORMANCE:
-        #         get_rotation_time = time.time() - start_time
-        #         global get_rotation_time_total
-        #         get_rotation_time_total += get_rotation_time
-        #         start_time = time.time()
+        #     performance_timestamp("robot ori euler")
             
         #     # a = targetA - sourceA
         #     # Version 1:
@@ -764,18 +735,7 @@ class Main(BaseSample):
         #     # nc = self.neighbouring_cells(robot_index) # neighbouring_cells() works
         #     self.robots[robot_index].apply_action(self._Vel_controller.forward(command=[forward, angle]))      
 
-        #     if MEASURE_PERFORMANCE:
-        #         apply_action_time = time.time() - start_time
-        #         global apply_action_time_total
-        #         apply_action_time_total += apply_action_time
-        #         print("Individual times: \n" +
-        #               f"Shape entering time {shape_entering_time} \n" +
-        #               f"get rotation time {get_rotation_time} \n" +
-        #               f"Apply action time {apply_action_time} \n")           
-        #         print("Cumulative times: \n" +
-        #               f"Shape entering total {shape_entering_time_total} \n" +
-        #               f"get rotation total {get_rotation_time_total} \n" +
-        #               f"Apply action total {apply_action_time_total} \n")    
+        #     performance_timestamp("apply action")
          
     # End Entering 
         return
