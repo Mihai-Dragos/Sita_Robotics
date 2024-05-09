@@ -29,3 +29,5 @@ actual_environment_y_max = a_e_v_amount
 actual_environment_size_x = actual_environment_x_max - actual_environment_x_min
 actual_environment_size_y = actual_environment_y_max - actual_environment_y_min
 
+LOG_CONTEXT_SPACE = 29
+MEASURE_PERFORMANCE = True
