@@ -42,7 +42,7 @@ from omni.isaac.examples.user_examples.git_isaac_sim.grid import normalized_x_st
 from omni.isaac.examples.user_examples.git_isaac_sim.grid import grey_grid, get_grid_rho, get_xi_rho, get_pos_of_rho
 from omni.isaac.examples.user_examples.git_isaac_sim.environment import setup_environment
 from omni.isaac.examples.user_examples.git_isaac_sim.robots import setup_robots
-from omni.isaac.examples.user_examples.git_isaac_sim.util import log, performance_timestamp
+from omni.isaac.examples.user_examples.git_isaac_sim.util import log, performance_timestamp, mod
 
 # Hardcode inital v_rho0_i
 robs_initial_v_rho0_i = [[0,0,0] for _ in range(num_robots)]
@@ -53,10 +53,6 @@ class Main(BaseSample):
         super().__init__()
         self.v_rho0_cache = {}
         return
-
-    def mod(self, a, n):
-        res = a - np.floor(a/n) * n
-        return res
     
     def setup_scene(self):
         self.world = self.get_world()
@@ -644,7 +640,7 @@ class Main(BaseSample):
             kf = 0.02
             forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
             ka = 0.8
-            ang = self.mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
+            ang = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
             ang = np.deg2rad(ang)
             angle = ka * (ang) # np.arctan2(v_y,v_x) - curr_rot[2]
             self.robots[robot_index].apply_action(self._Vel_controller.forward(command=[forward, angle]))
@@ -671,7 +667,7 @@ class Main(BaseSample):
             
         #     performance_timestamp("robot ori euler")            
             
-        #     ang = self.mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
+        #     ang = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
         #     ang = np.deg2rad(ang)
         #     angle = ka * (ang) # np.arctan2(v_y,v_x) - curr_rot[2]
         #     self.robots[robot_index].apply_action(self._Vel_controller.forward(command=[forward, angle]))
@@ -687,7 +683,7 @@ class Main(BaseSample):
         #     curr_rot = self.get_robot_ori_euler(robot_index)
         #     kf = 0.02
         #     forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
-        #     ang = self.mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
+        #     ang = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
         #     ang = np.deg2rad(ang)
         #     ka = 0.8
         #     angle = ka * (ang) 
@@ -720,7 +716,7 @@ class Main(BaseSample):
         #     #     a += 2*np.pi
         #     # Version 2:
         #     # Custom mod function: mod(a, n) -> a - floor(a/n) * n
-        #     ang = self.mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
+        #     ang = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
         #     ang = np.deg2rad(ang)
         #     angle = ka * (ang) # np.arctan2(v_y,v_x) - curr_rot[2]
         #     # if robot_index == 2:

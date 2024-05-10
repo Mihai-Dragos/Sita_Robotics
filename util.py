@@ -1,6 +1,11 @@
 import time
+import numpy as np
 
 from omni.isaac.examples.user_examples.git_isaac_sim.settings import LOG_CONTEXT_SPACE, MEASURE_PERFORMANCE
+
+def mod(a, n):
+    res = a - np.floor(a/n) * n
+    return res
 
 def log(context:str, message:str, shifted:bool=False):
     spacing = ""
