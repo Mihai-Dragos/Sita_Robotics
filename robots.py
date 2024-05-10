@@ -5,7 +5,7 @@ import omni                                                     # Provides the c
 
 import numpy as np
 
-from .settings import num_robots
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import num_robots
 
 def create_robots(world, typeRobot, lineMode):
     assets_root_path = get_assets_root_path()

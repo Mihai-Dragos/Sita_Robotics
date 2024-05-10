@@ -23,7 +23,7 @@ from pxr import UsdGeom, Gf, UsdPhysics                         # pxr usd import
 from omni.isaac.core.physics_context import PhysicsContext
 import omni.isaac.core.utils.prims as prim_utils
 
-from .controllers import DiffDriveController, HoloController
+from omni.isaac.examples.user_examples.git_isaac_sim.controllers import DiffDriveController, HoloController
 
 from omni.isaac.wheeled_robots.controllers.wheel_base_pose_controller import WheelBasePoseController
 from omni.isaac.wheeled_robots.controllers.differential_controller import DifferentialController
@@ -33,16 +33,16 @@ stage = omni.usd.get_context().get_stage()                      # Used to access
 timeline = omni.timeline.get_timeline_interface()               # Used to interact with simulation
 lidarInterface = _range_sensor.acquire_lidar_sensor_interface() # Used to interact with the LIDAR
 
-from .settings import num_robots, r_avoid, r_sense, input_shape, num_iterations 
-from .settings import actual_environment_size_x, actual_environment_size_y
-from .settings import actual_environment_x_min, actual_environment_x_max 
-from .settings import actual_environment_y_min, actual_environment_y_max
-from .grid import number_of_rows, number_of_columns
-from .grid import normalized_x_steps, normalized_y_steps
-from .grid import grey_grid, get_grid_rho, get_xi_rho, get_pos_of_rho
-from .environment import setup_environment
-from .robots import setup_robots
-from .util import log, performance_timestamp, mod
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import num_robots, r_avoid, r_sense, input_shape, num_iterations 
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_x_min, actual_environment_x_max 
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_y_min, actual_environment_y_max
+from omni.isaac.examples.user_examples.git_isaac_sim.grid import number_of_rows, number_of_columns
+from omni.isaac.examples.user_examples.git_isaac_sim.grid import normalized_x_steps, normalized_y_steps
+from omni.isaac.examples.user_examples.git_isaac_sim.grid import grey_grid, get_grid_rho, get_xi_rho, get_pos_of_rho
+from omni.isaac.examples.user_examples.git_isaac_sim.environment import setup_environment
+from omni.isaac.examples.user_examples.git_isaac_sim.robots import setup_robots
+from omni.isaac.examples.user_examples.git_isaac_sim.util import log, performance_timestamp, mod
 
 # Hardcode inital v_rho0_i
 robs_initial_v_rho0_i = [[0,0,0] for _ in range(num_robots)]

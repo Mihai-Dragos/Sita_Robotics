@@ -10,7 +10,7 @@
 import os
 
 from omni.isaac.examples.base_sample import BaseSampleExtension
-from .main import Main
+from omni.isaac.examples.user_examples.git_isaac_sim.main import Main
 
 
 class MainExtension(BaseSampleExtension):
