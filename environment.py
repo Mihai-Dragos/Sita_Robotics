@@ -5,11 +5,11 @@ import omni.isaac.core.utils.prims as prim_utils
 
 import numpy as np
 
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_x_min, actual_environment_x_max 
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_y_min, actual_environment_y_max
-from omni.isaac.examples.user_examples.git_isaac_sim.grid import normalized_x_steps, normalized_y_steps
-from omni.isaac.examples.user_examples.git_isaac_sim.grid import number_of_rows, number_of_columns
+from .settings import actual_environment_size_x, actual_environment_size_y
+from .settings import actual_environment_x_min, actual_environment_x_max 
+from .settings import actual_environment_y_min, actual_environment_y_max
+from .grid import normalized_x_steps, normalized_y_steps
+from .grid import number_of_rows, number_of_columns
 
 def create_walls(world, walls_color):
     Cube_00 = world.scene.add(

@@ -1,4 +1,4 @@
-from omni.isaac.examples.user_examples.git_isaac_sim.shapes import *
+from .shapes import *
 
 # Number of robots
 num_robots = 3
