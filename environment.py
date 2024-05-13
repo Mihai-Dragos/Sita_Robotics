@@ -3,6 +3,9 @@ from omni.isaac.core.objects import FixedCuboid
 from omni.isaac.core.objects.ground_plane import GroundPlane
 import omni.isaac.core.utils.prims as prim_utils
 
+from omni.isaac.sensor import Camera
+import omni.isaac.core.utils.numpy.rotations as rot_utils
+
 import numpy as np
 
 from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y
@@ -67,7 +70,7 @@ def create_walls(world, walls_color):
             prim_path="/World/Walls/Cube_05",
             name="cube_05",
             translation=np.array([0.0, 0.9, 0.25]),
-            scale=np.array([0.8, 0.1, 0.5]),  
+            scale=np.array([0.5, 0.1, 0.5]), #np.array([0.8, 0.1, 0.5]),  
             color=walls_color,
             # visual_material=walls_visual_material,
             # physics_material=walls_physics_material,
@@ -220,11 +223,53 @@ def setup_environment(world):
         }
     )
 
+    light_2 = prim_utils.create_prim(
+        "/World/Light_2",
+        "SphereLight",
+        position=np.array([0.0, 1.25, 2.5]),
+        attributes={
+            "inputs:radius": 0.25,
+            "inputs:intensity": 30e3,
+            "inputs:color": (1.0, 1.0, 1.0)
+        }
+    )
+
+    TopDownCamera = Camera(
+        prim_path="/World/TopDownCamera",
+        position=np.array([0.0, 1.25, 18.0]),
+        frequency=20,
+        resolution=(256, 256),
+        orientation=[0.0, 0.70711, 0.0, -0.70711]
+        # [0, 0, 90] is [0.0, 0.70711, 0.0, -0.70711] || OR || rot_utils.euler_angles_to_quats(np.array([180, -90, 0]), degrees=True, extrinsic=False)  
+        
+        # Trial and error to find correct orientation:    
+        # [-90, 0, 0]   -> [0, -90, 0]
+        # [90, 0, 0]    -> [-180, -90, 0]
+
+        # [0, 180, 0]   -> [-90, 90, 0]
+        # [0, 90, 0]    -> [0, 0, -90]      closest
+        # [0, 0, 0]     -> [90, -90, 0]
+        # [0, -90, 0]   -> [-180, 0, 90]
+        # [0, -180, 0]  -> [-90, 90, 0]
+        
+        # [0, 90, 90]   -> [90, 0, -90]
+        # [0, 90, -90]  -> [-90, 0, -90]
+        # [180, -90, 0] -> [0, 0, 90]       desired found
+        # [90, 90, 0]   -> [90, 0, -90]
+        # [-90, 90, 0]  -> [-90, 0, -90]
+    
+    )
+    
+    # print("before CAMERA", TopDownCamera.get_world_pose())
+    # TopDownCamera.set_world_pose([0.0, 1.25, 18.0], [0.0, 0.70711, 0.0, -0.70711])
+    # print("after CAMERA", TopDownCamera.get_world_pose())
+    
+    
     # Create Walls
     walls_color = np.array([1, 0.5, 0.5])
     # walls_visual_material = 
     # walls_physics_material = 
-    # create_walls(world, walls_color)
+    create_walls(world, walls_color)
 
     # Create Grid Visualisation
     create_grid_vis(world)

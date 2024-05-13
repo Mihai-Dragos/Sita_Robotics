@@ -1,15 +1,29 @@
-# Shape exploration velocity:
-#   Created psi_weight() to calculate the weight psi
-#   Created in_shape_boundary() to determine if robot is inside or outside of shape boundary
-#   Created occupied_cells() to determine if cells are occupied, including the size of the robot
-#   Created neighbouring_cells() to determine black cells within r_sense, (incl occupied cells if in_shape_boundary() == False)
-#   Started shape_exploration_velocity(), still needs to be implemented using functions created above
-# Troubleshooting Additions:
-#   New shape `shape_array_largerect`, large rectangle in bottom half to test `in_shape_boundary`, `occupied_cells()`, and `neighboring_cells()`
-#   `r_sense` made into global variable
-#   `num_robots` changed to 3
-#    `lidarsDrawLines` set to False
-# 29 Apr 2024 
+# Optimization
+#   `interaction_velocity()` now pre-calculates `get_robot_vel()` before performing actual calculation
+#   `interaction_velocity()` changed to reduce occasional errors on reset
+# Removing/moving "Hardcode" values to settings
+#   `in_shape_boundary()` changed to no longer use hardcoded `r_sense_cell_x` & `r_sense_cell_y` and to use calculated values
+#   `c_1` & `alpha` moved to settings.py. Removed from `calculate_v_rho0_i()`
+#   `r_check` moved to settings.py. Removed from `mu_weight` and `find_collision_points_index()`
+#       Note: Could not move hardcoded paper parameters from `shape_entering_velocity()`, `shape_exploration_velocity()`, and `interaction_velocity()`
+# Improve Demo
+#   Created `create_vel_vis()` in robots.py to visually show each velocity's contributions on each robot. Affected main.py global variables and `velocity_commands()`
+#   Created new camera: `TopDownCamera` in enviroment.py
+#   Created new light: `light_2` in enviroment.py
+#   Created new shape: `shape_array_floorplan` in shapes.py
+#   Changed settings.py parameter values:
+#       `r_sense`:      1   -> 0.7
+#       `h`:            2   -> 4
+#       `a_e_v_amount`: 1.5 -> 3
+#       `input_shape`:  ..._largerect -> _floorplan
+#   Changed `velocity_commands()` parameter values: (Still to be adjusted!)
+#       `entering_weight`:    1   -> 1
+#       `exploration_weight`: 2   -> 2.5
+#       `interaction_weight`: 0.31 -> 0.4
+# Housekeeping
+#   Created new function `get_n_cell_l_cell()` in grid.py which returns values `n_cell` and `l_cell`. Removed this calculation from `calculate_rho_0()`
+#   Renamed `num_iterations` back to `h` to align with paper parameter names. Affected `greyscale()` & `calculate_rho_0()`
+# 13 May 2024 22:50
 
 from omni.isaac.examples.base_sample import BaseSample
 
@@ -20,8 +34,13 @@ import asyncio                                                  # Used to run sa
 from omni.isaac.range_sensor import _range_sensor               # Imports the python bindings to interact with lidar sensor
 from pxr import UsdGeom, Gf, UsdPhysics                         # pxr usd imports used to create the cube
 
+from pxr import UsdShade, Sdf, Gf
+from omni.isaac.core.materials import OmniPBR
+import omni.isaac.core.utils.prims as prims_utils
+from pxr import UsdGeom, Gf, Vt
+
 from omni.isaac.core.physics_context import PhysicsContext
-import omni.isaac.core.utils.prims as prim_utils
+# import omni.isaac.core.utils.prims as prim_utils
 
 from omni.isaac.examples.user_examples.git_isaac_sim.controllers import DiffDriveController, HoloController
 
@@ -33,7 +52,8 @@ stage = omni.usd.get_context().get_stage()                      # Used to access
 timeline = omni.timeline.get_timeline_interface()               # Used to interact with simulation
 lidarInterface = _range_sensor.acquire_lidar_sensor_interface() # Used to interact with the LIDAR
 
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import num_robots, r_avoid, r_sense, input_shape, num_iterations 
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import num_robots, r_avoid, r_sense, input_shape, h, r_check
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import c_1, alpha
 from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y
 from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_x_min, actual_environment_x_max 
 from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_y_min, actual_environment_y_max
@@ -42,10 +62,16 @@ from omni.isaac.examples.user_examples.git_isaac_sim.grid import normalized_x_st
 from omni.isaac.examples.user_examples.git_isaac_sim.grid import grey_grid, get_grid_rho, get_xi_rho, get_pos_of_rho
 from omni.isaac.examples.user_examples.git_isaac_sim.environment import setup_environment
 from omni.isaac.examples.user_examples.git_isaac_sim.robots import setup_robots
+# from omni.isaac.examples.user_examples.git_isaac_sim.robots import base_sphere_prim_path
 from omni.isaac.examples.user_examples.git_isaac_sim.util import log, performance_timestamp, mod
 
-# Hardcode inital v_rho0_i
+# Inital v_rho0_i
 robs_initial_v_rho0_i = [[0,0,0] for _ in range(num_robots)]
+
+
+once = False
+mtl_created_list = []
+
 
 class Main(BaseSample):
     
@@ -74,23 +100,23 @@ class Main(BaseSample):
                                                             DifferentialController(name="diff_controller",
                                                                                     wheel_radius=0.03, wheel_base=0.1125),
                                                     is_holonomic=False)
-        # Made this to test difference if holonomic is set to true. To be tested
-        self._WBPholo_controller = WheelBasePoseController(name="wheel_base_pose_controller",
-                                                        open_loop_wheel_controller=
-                                                            DifferentialController(name="diff_controller",
-                                                                                    wheel_radius=0.03, wheel_base=0.1125),
-                                                    is_holonomic=True)
+        # # Made this to test difference if holonomic is set to true. To be tested
+        # self._WBPholo_controller = WheelBasePoseController(name="wheel_base_pose_controller",
+        #                                                 open_loop_wheel_controller=
+        #                                                     DifferentialController(name="diff_controller",
+        #                                                                             wheel_radius=0.03, wheel_base=0.1125),
+        #                                             is_holonomic=True)
         
-        # Can continue to implement holonomic controller if required.
-        # https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.wheeled_robots/docs/index.html
-        self._holo_controller = HolonomicController(name="holonomic_controller",
-                                                    wheel_radius=np.array([0.04, 0.04, 0.04]),
-                                                    wheel_positions=np.array([(-0.098043, 0.0006367, -0.050501),(0.05,-0.084525,-0.050501),(0.05,0.08569,-0.50501)]), 
-                                                    wheel_orientations=np.array([(0,0,0,1), (0.866,0,0,-0.5), (0.866,0,0,0.5)]),
-                                                    mecanum_angles=np.array([-90, -90, -90]),
-                                                    wheel_axis=np.array([1,0,0]),
-                                                    up_axis=np.array([0,0,1])
-                                                    )
+        # # Can continue to implement holonomic controller if required.
+        # # https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.wheeled_robots/docs/index.html
+        # self._holo_controller = HolonomicController(name="holonomic_controller",
+        #                                             wheel_radius=np.array([0.04, 0.04, 0.04]),
+        #                                             wheel_positions=np.array([(-0.098043, 0.0006367, -0.050501),(0.05,-0.084525,-0.050501),(0.05,0.08569,-0.50501)]), 
+        #                                             wheel_orientations=np.array([(0,0,0,1), (0.866,0,0,-0.5), (0.866,0,0,0.5)]),
+        #                                             mecanum_angles=np.array([-90, -90, -90]),
+        #                                             wheel_axis=np.array([1,0,0]),
+        #                                             up_axis=np.array([0,0,1])
+        #                                             )
 
         # Changing inital v_rho0_i from [0,0,0] to become get_robot_vel() initially. 
         # Afterwards these values are overwritten in calculate_v_rho0_i() as intented
@@ -116,8 +142,8 @@ class Main(BaseSample):
         
         # Hardcode
         entering_weight = 1
-        exploration_weight = 2
-        interaction_weight = 0.31 # 0.05
+        exploration_weight = 2.5 # for floorplan # 2 for video
+        interaction_weight = 0.4 # for floorplan # 0.31 for video # 0.05
 
         applied_entering = np.multiply(entering_weight, raw_entering) 
         applied_exploration = np.multiply(exploration_weight, raw_exploration)
@@ -133,6 +159,57 @@ class Main(BaseSample):
         log("velocity_commands()", f"Rob: {robot_index} | Velocity commands: {np.round(v_i, decimals=2)}")
         log("raw", f"Ent:{np.round(raw_entering, decimals=2)} | Exp:{np.round(raw_exploration, decimals=2)} | Int:{np.round(raw_interaction, decimals=2)}", True)
         log("applied", f"Ent:{np.round(v[0], decimals=2)} | Exp:{np.round(v[1], decimals=2)} | Int:{np.round(v[2], decimals=2)}", True)
+
+        
+        # Base path names for create_vel_vis()
+        base_sphere_prim_path = "/World/Robot_"
+        base_entering_sphere_prim_path_suffix = "/Entering_Sphere_"
+        base_exploration_sphere_prim_path_suffix = "/Exploration_Sphere_"
+        base_interaction_sphere_prim_path_suffix = "/Interaction_Sphere_"
+
+        base_sphere_prim_path_suffix = []
+        base_sphere_prim_path_suffix.append(base_entering_sphere_prim_path_suffix)
+        base_sphere_prim_path_suffix.append(base_exploration_sphere_prim_path_suffix)
+        base_sphere_prim_path_suffix.append(base_interaction_sphere_prim_path_suffix)
+
+        # Have to change code below to be generalized to work for every robot's every velocity
+        vel = 0 # 0 ent, 1 exp, 2 int
+        path = f"{base_sphere_prim_path}{robot_index:02}/chassis{base_sphere_prim_path_suffix[vel]}{robot_index:02}"
+        
+        global once
+        global mtl_created_list
+        if once != True:
+            # Create a new material using OmniGlass.mdl
+            omni.kit.commands.execute(
+                "CreateAndBindMdlMaterialFromLibrary",
+                mdl_name="OmniPBR.mdl",
+                mtl_name="OmniPBR",
+                mtl_created_list=mtl_created_list,
+            )
+            once = True
+        # Get reference to created material
+        stage = omni.usd.get_context().get_stage()
+        mtl_prim = stage.GetPrimAtPath(mtl_created_list[0])
+        # Set material inputs, these can be determined by looking at the .mdl file
+        # or by selecting the Shader attached to the Material in the stage window and looking at the details panel
+        calculated_color = Gf.Vec3f((np.linalg.norm(v[0])/np.linalg.norm(v_i)), 0.0, 0.0)
+        print(f"calculated_color: {calculated_color}")
+        omni.usd.create_material_input(mtl_prim, "diffuse_color_constant", calculated_color, Sdf.ValueTypeNames.Color3f)
+        # Create a prim to apply the material to
+        stage = omni.usd.get_context().get_stage()
+        # result, path = omni.kit.commands.execute("CreateMeshPrimCommand", prim_type="Sphere")
+        # Get the path to the prim
+        sphere_prim = stage.GetPrimAtPath(path)
+        # Bind the material to the prim
+        sphere_mat_shade = UsdShade.Material(mtl_prim)
+        UsdShade.MaterialBindingAPI(sphere_prim).Bind(sphere_mat_shade, UsdShade.Tokens.strongerThanDescendants)
+        
+        
+        # nEWCOLOR = Vt.Vec3fArray([Gf.Vec3f((np.linalg.norm(v[0])/np.linalg.norm(v_i))*255.0, 0.0, 0.0)])
+        # print(nEWCOLOR)
+        # stage = omni.usd.get_context().get_stage()
+        # entering_sphere = UsdGeom.Mesh.Get(stage, path)
+        # entering_sphere.GetDisplayColorAttr().Set(nEWCOLOR)
 
         return v_i
     
@@ -232,10 +309,6 @@ class Main(BaseSample):
         - v_rho_i: The local interpretation of the moving velocity of the entire shape for robot i.
         """
 
-        # Hardcode Assuming Parameters
-        c_1 = 1.6       # 1.6 in Paper
-        alpha = 0.8     # 0.8 in Paper
-
         N = self.neighboring_i(robot_index)
 
         if len(N) == 0:
@@ -298,7 +371,7 @@ class Main(BaseSample):
         - v_ent_i: The shape-entering velocity component (numpy array).
         """
         # Hardcode
-        k_1 = 10    # 10 in Paper
+        k_1 = 10
 
         # Selected the position of center of cell the robot is currently in
         p_i = self.get_robot_p_rho0(robot_index)
@@ -321,9 +394,8 @@ class Main(BaseSample):
 
     def mu_weight(self, arg):
         mu = 0
-        r_check = 1
-        if arg <= r_check: #r_avoid
-            mu = (r_check/arg) - 1 #r_avoid
+        if arg <= r_check:
+            mu = (r_check/arg) - 1
         else:
             mu = 0
         return mu
@@ -332,9 +404,6 @@ class Main(BaseSample):
         distance, angle = self.get_lidar(robot_index)
         wall_indices = []
 
-        # Hardcode distance check
-        r_check = 1
-        
         # Copy relevant indicies into wall_indices 
         for i in range(len(distance)):
             if distance[i] < r_check:
@@ -412,7 +481,7 @@ class Main(BaseSample):
         
         # At least one of N exist O so calculate values
         # Hardcode
-        k_3 = 25    # 20,25,30 in Paper
+        k_3 = 25    # 20,25,30 in Paper        
         
         p = []
         
@@ -437,11 +506,25 @@ class Main(BaseSample):
                     else:
                         p.append(O[j-len(N)])
 
+            
             v_i = self.get_robot_vel(robot_index)
+            # print(f"Before: v_i: {v_i} | v_i.size: {v_i.size}")
+            if v_i.size <= 1:
+                v_i = np.array([0.0 , 0.0 , 0.0])
+            # print(f"After: v_i: {v_i} | v_i.size: {v_i.size}")
+            v_ = []
+            for j in range(len(N)):
+                v_.append(self.get_robot_vel(N[j]))
+            v_ = np.array(v_)
+            # print(f"Before: v_: {v_} | v_.size: {v_.size}")
+            if v_.size <= 2:
+                v_ = np.array([0.0 , 0.0 , 0.0])
+            # print(f"After: v_: {v_} | v_.size: {v_.size}")
+            
 
             term2 = np.array(np.sum([
                                 np.multiply(
-                                    (1 / len(N)) , [a - b for a,b in zip(v_i, self.get_robot_vel(N[j]))]
+                                    (1 / len(N)) , np.subtract(v_i, v_[j]) #[a - b for a,b in zip(v_i, v_[j])]
                                 )
                             for j in range(len(N))], axis=0)
                             )
@@ -494,15 +577,15 @@ class Main(BaseSample):
         # # Radius r_sense means this number of cells 
 
         # Real value too large for now
-        # r_sense_cell_x = np.int(r_sense/normalized_x_steps)
-        # r_sense_cell_y = np.int(r_sense/normalized_y_steps)
+        r_sense_cell_x = np.int(r_sense/normalized_x_steps)
+        r_sense_cell_y = np.int(r_sense/normalized_y_steps)
         # print(f"r_sense_cell x:{r_sense_cell_x} y:{r_sense_cell_x}")
         
         # Hardcode - using radius of cell_sense for now
-        cell_sense = 1
-        r_sense_cell_x = np.int(cell_sense)
-        r_sense_cell_y = np.int(cell_sense)
-        # print(f"r_sense_cell x:{r_sense_cell_x} y:{r_sense_cell_x}")
+        # cell_sense = 1
+        # r_sense_cell_x = np.int(cell_sense)
+        # r_sense_cell_y = np.int(cell_sense)
+        # # print(f"r_sense_cell x:{r_sense_cell_x} y:{r_sense_cell_x}")
 
         # neighbouring cells within radius r_sense 
         area = grey_grid[curr_rho_x-r_sense_cell_x:curr_rho_x+r_sense_cell_x+1, curr_rho_y-r_sense_cell_y:curr_rho_y+r_sense_cell_y+1]
@@ -517,7 +600,7 @@ class Main(BaseSample):
             in_shape = True
         
         log("in_shape_boundary()", f"Rob: {robot_index} | in_shape?: {in_shape} | max_color: {np.round(local_max_color,2)} | r_sense_cells x:{r_sense_cell_x} y:{r_sense_cell_x} ")
-        log("", f" | area:\n{np.round(area,2)}\n")
+        log("", f"area:\n{np.round(area,2)}\n")
         return in_shape, r_sense_cell_x, r_sense_cell_y, area
 
     def occupied_cells(self):

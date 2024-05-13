@@ -1,5 +1,6 @@
 from omni.isaac.core.utils.nucleus import get_assets_root_path
 from omni.isaac.wheeled_robots.robots import WheeledRobot
+from omni.isaac.core.objects import VisualSphere
 
 import omni                                                     # Provides the core omniverse apis
 
@@ -112,6 +113,75 @@ def create_lidars(lidarsDrawLines, lidarsDrawPoints):
 
     return
 
+def create_vel_vis(world):
+
+    # base_entering_sphere_prim_path = "/World/Robot_"
+    # base_entering_sphere_name = "entering_sphere_" 
+    # i = 0
+    # entering_color = np.array([0.0, 0.0, 0.0])
+    # entering_trans = -0.05
+
+    # world.scene.add(
+    #                 VisualSphere(
+    #                     prim_path=f"{base_entering_sphere_prim_path}{i:02}/chassis/Entering_Sphere_{i:02}",
+    #                     name=f"{base_entering_sphere_name}{i:02}",
+    #                     # translation=np.array([x, (0-actual_environment_y_min)/2, trans_height]),
+    #                     translation=np.array([entering_trans, 0, 0.15]),
+    #                     scale=np.array([0.02, 0.02, 0.02]),  
+    #                     color=entering_color
+    #                 ))
+
+    base_sphere_prim_path = "/World/Robot_"
+
+    base_entering_sphere_prim_path_suffix = "/Entering_Sphere_"
+    base_exploration_sphere_prim_path_suffix = "/Exploration_Sphere_"
+    base_interaction_sphere_prim_path_suffix = "/Interaction_Sphere_"
+
+    base_sphere_prim_path_suffix = []
+    base_sphere_prim_path_suffix.append(base_entering_sphere_prim_path_suffix)
+    base_sphere_prim_path_suffix.append(base_exploration_sphere_prim_path_suffix)
+    base_sphere_prim_path_suffix.append(base_interaction_sphere_prim_path_suffix)
+
+    base_entering_sphere_name = "entering_sphere_"
+    base_exploration_sphere_name = "exploration_sphere_"
+    base_interaction_sphere_name = "interaction_sphere_"
+
+    base_sphere_name = []
+    base_sphere_name.append(base_entering_sphere_name)
+    base_sphere_name.append(base_exploration_sphere_name)
+    base_sphere_name.append(base_interaction_sphere_name)
+
+    entering_trans = -0.05
+    exploration_trans = 0.0
+    interaction_trans = 0.05 
+
+    vel_trans = []
+    vel_trans.append(entering_trans)
+    vel_trans.append(exploration_trans)
+    vel_trans.append(interaction_trans)
+
+    entering_color = np.array([2.0, 0.0, 0.0])
+    exploration_color = np.array([0.0, 2.0, 0.0])
+    interaction_color = np.array([0.0, 0.0, 2.0])
+
+    vel_color = []
+    vel_color.append(entering_color)
+    vel_color.append(exploration_color)
+    vel_color.append(interaction_color)
+
+    for i in range(num_robots):
+        for v in range(3):
+            world.scene.add(
+                    VisualSphere(
+                        prim_path=f"{base_sphere_prim_path}{i:02}/chassis{base_sphere_prim_path_suffix[v]}{i:02}",
+                        name=f"{base_sphere_name[v]}{i:02}",
+                        # translation=np.array([x, (0-actual_environment_y_min)/2, trans_height]),
+                        translation=np.array([vel_trans[v], 0, 0.15]),
+                        scale=np.array([0.02, 0.02, 0.02]),  
+                        color=vel_color[v]
+                    ))
+    # return base_sphere_prim_path, base_sphere_prim_path_suffix
+
 def setup_robots(world):
     # Create Robots
     lineMode = True
@@ -122,3 +192,5 @@ def setup_robots(world):
     lidarsDrawLines = False
     lidarsDrawPoints = False
     create_lidars(lidarsDrawLines, lidarsDrawPoints)
+
+    create_vel_vis(world)
