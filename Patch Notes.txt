@@ -1,0 +1,28 @@
+13 May 2024 22:50
+
+__Changes:__
+**Optimization**
+- `interaction_velocity()` now pre-calculates `get_robot_vel()` before performing actual calculation
+- `interaction_velocity()` changed to reduce occasional errors on reset
+**Removing/moving "Hardcode" values to settings**
+- `in_shape_boundary()` changed to no longer use hardcoded `r_sense_cell_x` & `r_sense_cell_y` and to use calculated values
+- `c_1` & `alpha` moved to settings.py. Removed from `calculate_v_rho0_i()`
+- `r_check` moved to settings.py. Removed from `mu_weight` and `find_collision_points_index()`
+-- Note: Could not move hardcoded paper parameters from `shape_entering_velocity()`, `shape_exploration_velocity()`, and `interaction_velocity()`
+**Improve Demo**
+- Created `create_vel_vis()` in robots.py to visually show each velocity's contributions on each robot. Affected main.py global variables and `velocity_commands()`
+- Created new camera: `TopDownCamera` in enviroment.py
+- Created new light: `light_2` in enviroment.py
+- Created new shape: `shape_array_floorplan` in shapes.py
+- Changed settings.py parameter values:
+-- `r_sense`:      1   -> 0.7
+-- `h`:            2   -> 4
+-- `a_e_v_amount`: 1.5 -> 3
+-- `input_shape`:  ..._largerect -> _floorplan
+- Changed `velocity_commands()` parameter values: (Still to be adjusted!)
+-- `entering_weight`:    1   -> 1
+-- `exploration_weight`: 2   -> 2.5
+-- `interaction_weight`: 0.31 -> 0.4
+**Housekeeping**
+- Created new function `get_n_cell_l_cell()` in grid.py which returns values `n_cell` and `l_cell`. Removed this calculation from `calculate_rho_0()`
+- Renamed `num_iterations` back to `h` to align with paper parameter names. Affected `greyscale()` & `calculate_rho_0()`
