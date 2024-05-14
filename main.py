@@ -25,6 +25,30 @@
 #   Renamed `num_iterations` back to `h` to align with paper parameter names. Affected `greyscale()` & `calculate_rho_0()`
 # 13 May 2024 22:50
 
+# Improve Demo
+#   Made `create_vel_vis()` actually work and show the contributions of each velocity of each 
+#   Added code in `setup_scene()` & `velocity_commands()` to create and update velocity visualization spheres respectively
+#       Improved method from yesterday (Method 0) and created 2 additional methods (Methods 1 & 2) for it. Method 2 was made to troubleshoot Method 1.
+#   Made `show_vel_spheres` in settings.py to toggle creating and calculating velocity visualization spheres
+#   Made `create_vel_vis_material()` to offload tasks within `velocity_commands()`
+#   Changed size of `Cube_05` to get better demo results: x = 0.8 -> 0.4
+#   Changed parameter values: (Still to be adjusted, but this is defs better than previous)
+#       `r_check`:              1   -> 1.2
+#       `entering_weight`:      1   -> 0.9
+#       `exploration_weight`:   2.5 -> 4.0
+#       `interaction_weight`:   0.4 -> 0.35
+# Optimization
+#   Forwarding `base_sphere_prim_path` & `base_sphere_prim_path_suffix` from robots.py for velocity visualization spheres in `velocity_commands()`
+#   Pre-calculating values in `velocity_commands()` for velocity visualization spheres
+# Housekeeping
+#   Moved robot and lidar parameters to settings.py from robots.py  
+#   Moved parameters to settings.py from `velocity_commands()` , `shape_entering_velocity()` & `interaction_velocity()`
+#   Renamed and moved parameters to settings.py: [kf & ka] -> [forward_gain & angle_gain] 
+#   Grouped and organized settings.py
+#   Grouped import statements in main.py by type, use, and relevancy
+#   Improved printouts of `velocity_commands()` and `send_robot_actions()`
+# 14 May 2024 21:20
+
 from omni.isaac.examples.base_sample import BaseSample
 
 import numpy as np
@@ -52,29 +76,30 @@ stage = omni.usd.get_context().get_stage()                      # Used to access
 timeline = omni.timeline.get_timeline_interface()               # Used to interact with simulation
 lidarInterface = _range_sensor.acquire_lidar_sensor_interface() # Used to interact with the LIDAR
 
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import num_robots, r_avoid, r_sense, input_shape, h, r_check
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import c_1, alpha
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_x_min, actual_environment_x_max 
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_y_min, actual_environment_y_max
-from omni.isaac.examples.user_examples.git_isaac_sim.grid import number_of_rows, number_of_columns
-from omni.isaac.examples.user_examples.git_isaac_sim.grid import normalized_x_steps, normalized_y_steps
+
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import num_robots, input_shape, h, r_avoid, r_sense, r_check
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import entering_weight, exploration_weight, interaction_weight
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import c_1, alpha, k_1, k_3, forward_gain, angle_gain
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y, actual_environment_x_min, actual_environment_x_max, actual_environment_y_min, actual_environment_y_max
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import show_vel_spheres
+from omni.isaac.examples.user_examples.git_isaac_sim.grid import number_of_rows, number_of_columns, normalized_x_steps, normalized_y_steps
 from omni.isaac.examples.user_examples.git_isaac_sim.grid import grey_grid, get_grid_rho, get_xi_rho, get_pos_of_rho
 from omni.isaac.examples.user_examples.git_isaac_sim.environment import setup_environment
-from omni.isaac.examples.user_examples.git_isaac_sim.robots import setup_robots
-# from omni.isaac.examples.user_examples.git_isaac_sim.robots import base_sphere_prim_path
+from omni.isaac.examples.user_examples.git_isaac_sim.robots import setup_robots, base_sphere_prim_path, base_sphere_prim_path_suffix
 from omni.isaac.examples.user_examples.git_isaac_sim.util import log, performance_timestamp, mod
 
 # Inital v_rho0_i
 robs_initial_v_rho0_i = [[0,0,0] for _ in range(num_robots)]
 
-
-once = False
+# Methods 0 & 1 - Detailed in velocity_commands()
 mtl_created_list = []
-
+# Methods 1 & 2 - Detailed in velocity_commands()
+spheres_prim = [[0,0,0] for _ in range(num_robots)]
+spheres_mat = [[0,0,0] for _ in range(num_robots)]
+mtl_prim = [[0,0,0] for _ in range(num_robots)] 
 
 class Main(BaseSample):
-    
+
     def __init__(self) -> None:
         super().__init__()
         self.v_rho0_cache = {}
@@ -82,9 +107,31 @@ class Main(BaseSample):
     
     def setup_scene(self):
         self.world = self.get_world()
-        setup_environment(self.world)
+        setup_environment(self.world) 
         setup_robots(self.world)
-
+        
+        if show_vel_spheres:
+            # Methods 0 & 1 - Detailed in velocity_commands()
+            for _ in range(num_robots):
+                for _ in range(3):
+                    omni.kit.commands.execute(
+                        "CreateAndBindMdlMaterialFromLibrary",
+                        mdl_name="OmniPBR.mdl",
+                        mtl_name=f"OmniPBR",
+                        mtl_created_list=mtl_created_list,
+                    )
+                    
+            # # Method 2 - Detailed in velocity_commands()
+            # for i in range(num_robots):
+            #     for vel in range(3):
+            #         omni.kit.commands.execute(
+            #             "CreateMdlMaterialPrimCommand",
+            #             mtl_url="OmniPBR.mdl",
+            #             mtl_name=f"OmniPBR_{i:02}_{vel:01}",
+            #             mtl_path= f"/World/Looks/OmniPBR_{i:02}_{vel:01}",
+            #         )
+            #         print(f"mtl_created count: {3*i + vel}")
+        
     async def setup_post_load(self):
         self._world = self.get_world()
         self.robots = [0 for _ in range(num_robots)]
@@ -140,77 +187,70 @@ class Main(BaseSample):
         raw_exploration = self.shape_exploration_velocity(robot_index)
         raw_interaction = self.interaction_velocity(robot_index)[0:2]
         
-        # Hardcode
-        entering_weight = 1
-        exploration_weight = 2.5 # for floorplan # 2 for video
-        interaction_weight = 0.4 # for floorplan # 0.31 for video # 0.05
-
         applied_entering = np.multiply(entering_weight, raw_entering) 
         applied_exploration = np.multiply(exploration_weight, raw_exploration)
         applied_interaction = np.multiply(interaction_weight, raw_interaction)
         
         v = []
         v.append(applied_entering)
-        # print(f"Test if weights works | Before: {v_ent_i} >> After: {np.multiply(v_ent_weight, v_ent_i)}")
         v.append(applied_exploration)
         v.append(applied_interaction)
         v_i = np.sum([v[j] for j in range(len(v))], axis=0)
         
         log("velocity_commands()", f"Rob: {robot_index} | Velocity commands: {np.round(v_i, decimals=2)}")
-        log("raw", f"Ent:{np.round(raw_entering, decimals=2)} | Exp:{np.round(raw_exploration, decimals=2)} | Int:{np.round(raw_interaction, decimals=2)}", True)
-        log("applied", f"Ent:{np.round(v[0], decimals=2)} | Exp:{np.round(v[1], decimals=2)} | Int:{np.round(v[2], decimals=2)}", True)
+        log("individual raw", f"Ent:{np.round(raw_entering, decimals=2)} | Exp:{np.round(raw_exploration, decimals=2)} | Int:{np.round(raw_interaction, decimals=2)}", True)
+        log("individual weighted", f"Ent:{np.round(v[0], decimals=2)} | Exp:{np.round(v[1], decimals=2)} | Int:{np.round(v[2], decimals=2)}", True)
 
-        
-        # Base path names for create_vel_vis()
-        base_sphere_prim_path = "/World/Robot_"
-        base_entering_sphere_prim_path_suffix = "/Entering_Sphere_"
-        base_exploration_sphere_prim_path_suffix = "/Exploration_Sphere_"
-        base_interaction_sphere_prim_path_suffix = "/Interaction_Sphere_"
+        if show_vel_spheres:
+            entering_mag = np.linalg.norm(v[0])
+            exploration_mag = np.linalg.norm(v[1])
+            interaction_mag = np.linalg.norm(v[2])
+            total_mag_simple = np.linalg.norm(v_i) # Would sometimes let color value get larger than 2
+            total_mag = entering_mag + exploration_mag + interaction_mag
 
-        base_sphere_prim_path_suffix = []
-        base_sphere_prim_path_suffix.append(base_entering_sphere_prim_path_suffix)
-        base_sphere_prim_path_suffix.append(base_exploration_sphere_prim_path_suffix)
-        base_sphere_prim_path_suffix.append(base_interaction_sphere_prim_path_suffix)
+            entering_color = Gf.Vec3f((entering_mag/total_mag), 0.0, 0.0)
+            exploration_color = Gf.Vec3f(0.0, (exploration_mag/total_mag), 0.0)
+            interaction_color = Gf.Vec3f(0.0, 0.0, (interaction_mag/total_mag))
+            vel_colors = []
+            vel_colors.append(entering_color)
+            vel_colors.append(exploration_color)
+            vel_colors.append(interaction_color)
+            log("induvidual color %", f"Ent (R): {np.round(vel_colors[0][0]*50, decimals=2)}% | Exp (G): {np.round(vel_colors[1][1]*50, decimals=2)}% | Int (B): {np.round(vel_colors[2][2]*50, decimals=2)}%", True)
+            
+            stage = omni.usd.get_context().get_stage()
 
-        # Have to change code below to be generalized to work for every robot's every velocity
-        vel = 0 # 0 ent, 1 exp, 2 int
-        path = f"{base_sphere_prim_path}{robot_index:02}/chassis{base_sphere_prim_path_suffix[vel]}{robot_index:02}"
-        
-        global once
-        global mtl_created_list
-        if once != True:
-            # Create a new material using OmniGlass.mdl
-            omni.kit.commands.execute(
-                "CreateAndBindMdlMaterialFromLibrary",
-                mdl_name="OmniPBR.mdl",
-                mtl_name="OmniPBR",
-                mtl_created_list=mtl_created_list,
-            )
-            once = True
-        # Get reference to created material
-        stage = omni.usd.get_context().get_stage()
-        mtl_prim = stage.GetPrimAtPath(mtl_created_list[0])
-        # Set material inputs, these can be determined by looking at the .mdl file
-        # or by selecting the Shader attached to the Material in the stage window and looking at the details panel
-        calculated_color = Gf.Vec3f((np.linalg.norm(v[0])/np.linalg.norm(v_i)), 0.0, 0.0)
-        print(f"calculated_color: {calculated_color}")
-        omni.usd.create_material_input(mtl_prim, "diffuse_color_constant", calculated_color, Sdf.ValueTypeNames.Color3f)
-        # Create a prim to apply the material to
-        stage = omni.usd.get_context().get_stage()
-        # result, path = omni.kit.commands.execute("CreateMeshPrimCommand", prim_type="Sphere")
-        # Get the path to the prim
-        sphere_prim = stage.GetPrimAtPath(path)
-        # Bind the material to the prim
-        sphere_mat_shade = UsdShade.Material(mtl_prim)
-        UsdShade.MaterialBindingAPI(sphere_prim).Bind(sphere_mat_shade, UsdShade.Tokens.strongerThanDescendants)
-        
-        
-        # nEWCOLOR = Vt.Vec3fArray([Gf.Vec3f((np.linalg.norm(v[0])/np.linalg.norm(v_i))*255.0, 0.0, 0.0)])
-        # print(nEWCOLOR)
-        # stage = omni.usd.get_context().get_stage()
-        # entering_sphere = UsdGeom.Mesh.Get(stage, path)
-        # entering_sphere.GetDisplayColorAttr().Set(nEWCOLOR)
+            # # Method 0 - Not caching sphereprims or materials and reusing same variables for each one
+            # for vel in range(3):
+            #     mtl_prim = stage.GetPrimAtPath(mtl_created_list[robot_index*3 + vel])
+            #     omni.usd.create_material_input(mtl_prim, "diffuse_color_constant", vel_colors[vel], Sdf.ValueTypeNames.Color3f)
+            #     path = f"{base_sphere_prim_path}{robot_index:02}/chassis{base_sphere_prim_path_suffix[vel]}{robot_index:02}"
+            #     sphere_prim = stage.GetPrimAtPath(path)
+            #     sphere_mat_shade = UsdShade.Material(mtl_prim)
+            #     UsdShade.MaterialBindingAPI(sphere_prim).Bind(sphere_mat_shade, UsdShade.Tokens.strongerThanDescendants)
 
+            # Method 1 - Each prim and material is indexed by robot index and velocity command, so each sphere has unique id
+            # vel: 0 ent, 1 exp, 2 int
+            for vel in range(3):
+                mtl_prim[robot_index][vel] = stage.GetPrimAtPath(mtl_created_list[robot_index*3 + vel])
+                omni.usd.create_material_input(mtl_prim[robot_index][vel], "diffuse_color_constant", vel_colors[vel], Sdf.ValueTypeNames.Color3f)
+                path = f"{base_sphere_prim_path}{robot_index:02}/chassis{base_sphere_prim_path_suffix[vel]}{robot_index:02}"
+                spheres_prim[robot_index][vel] = stage.GetPrimAtPath(path)
+                spheres_mat[robot_index][vel] = UsdShade.Material(mtl_prim[robot_index][vel])
+                UsdShade.MaterialBindingAPI(spheres_prim[robot_index][vel]).Bind(spheres_mat[robot_index][vel], UsdShade.Tokens.strongerThanDescendants)
+            
+            # # Method 2 - [Made for Troubleshooting] Same as Method 1 but creating and applying are done seperately instead of together
+            # for vel in range(3):
+            #     mtl_prim[robot_index][vel] = stage.GetPrimAtPath(f"/Looks/OmniPBR_{robot_index:02}_{vel:01}") #mtl_created_list[robot_index*3 + vel]
+            #     omni.usd.create_material_input(mtl_prim[robot_index][vel], "diffuse_color_constant", vel_colors[vel], Sdf.ValueTypeNames.Color3f)
+            #     path = f"{base_sphere_prim_path}{robot_index:02}/chassis{base_sphere_prim_path_suffix[vel]}{robot_index:02}"
+            #     omni.kit.commands.execute(
+            #         'BindMaterialCommand',
+            #         prim_path=path,
+            #         material_path=f"/World/Looks/OmniPBR_{robot_index:02}_{vel:01}",
+            #         strength='strongerThanDescendants'
+            #     )
+            #     print(f"Bound Rob: {robot_index}, vel: {vel}")
+           
         return v_i
     
     def get_robot_pos(self, robot_index):
@@ -370,8 +410,6 @@ class Main(BaseSample):
         Returns:
         - v_ent_i: The shape-entering velocity component (numpy array).
         """
-        # Hardcode
-        k_1 = 10
 
         # Selected the position of center of cell the robot is currently in
         p_i = self.get_robot_p_rho0(robot_index)
@@ -480,9 +518,6 @@ class Main(BaseSample):
             return np.array(v_int_i)
         
         # At least one of N exist O so calculate values
-        # Hardcode
-        k_3 = 25    # 20,25,30 in Paper        
-        
         p = []
         
         if (len(N) <= 0):               # If no N, only calculate term1 and set term2 to [0.0, 0.0, 0.0]
@@ -716,18 +751,18 @@ class Main(BaseSample):
 
     # Start Velocity command:
 
-        for robot_index in range(num_robots): # num_robots
+        for robot_index in range(num_robots): 
             v_x, v_y = self.velocity_commands(robot_index) 
             curr_rot = self.get_robot_ori_euler(robot_index)
-
-            kf = 0.02
-            forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
-            ka = 0.8
-            ang = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
-            ang = np.deg2rad(ang)
-            angle = ka * (ang) # np.arctan2(v_y,v_x) - curr_rot[2]
+            forward_raw = (((v_x ** 2) + (v_y ** 2)) ** 0.5)
+            forward = forward_gain * forward_raw
+            angle_raw = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
+            angle_raw = np.deg2rad(angle_raw)
+            angle = angle_gain * (angle_raw)
             self.robots[robot_index].apply_action(self._Vel_controller.forward(command=[forward, angle]))
-
+            log("send_robot_actions()", f"Rob: {robot_index} | Velocities forward: {np.round(forward, decimals=2)} m/s | angular: {np.round(angle, decimals=2)} rads/s")
+            log("", f"Raw velocities forward: {np.round(forward_raw, decimals=2)} m/s | angular: {np.round(angle_raw, decimals=2)} rads/s", True)
+    
     # End Velocity command
 
 
@@ -818,4 +853,4 @@ class Main(BaseSample):
          
     # End Entering 
         return
-    
+     

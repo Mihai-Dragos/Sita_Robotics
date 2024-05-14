@@ -70,7 +70,7 @@ def create_walls(world, walls_color):
             prim_path="/World/Walls/Cube_05",
             name="cube_05",
             translation=np.array([0.0, 0.9, 0.25]),
-            scale=np.array([0.5, 0.1, 0.5]), #np.array([0.8, 0.1, 0.5]),  
+            scale=np.array([0.4, 0.1, 0.5]), #np.array([0.8, 0.1, 0.5]),  
             color=walls_color,
             # visual_material=walls_visual_material,
             # physics_material=walls_physics_material,
@@ -236,7 +236,7 @@ def setup_environment(world):
 
     TopDownCamera = Camera(
         prim_path="/World/TopDownCamera",
-        position=np.array([0.0, 1.25, 18.0]),
+        position=np.array([0.0, 1.25, 13.0]),
         frequency=20,
         resolution=(256, 256),
         orientation=[0.0, 0.70711, 0.0, -0.70711]

@@ -1,3 +1,31 @@
+14 May 2024 21:23
+
+__Changes:__
+**Improve Demo**
+- Made `create_vel_vis()` actually work and show the contributions of each velocity of each 
+- Added code in `setup_scene()` & `velocity_commands()` to create and update velocity visualization spheres respectively
+- Improved method from yesterday (Method 0) and created 2 additional methods (Methods 1 & 2) for it. Method 2 was made to troubleshoot Method 1.
+- Made `show_vel_spheres` in settings.py to toggle creating and calculating velocity visualization spheres
+- Made `create_vel_vis_material()` to offload tasks within `velocity_commands()`
+- Changed size of `Cube_05` to get better demo results: `x = 0.8 -> 0.4`
+- Changed parameter values: (Still to be adjusted, but this is defs better than previous)
+-- `r_check`:              1   -> 1.2
+-- `entering_weight`:      1   -> 0.9
+-- `exploration_weight`:   2.5 -> 4.0
+-- `interaction_weight`:   0.4 -> 0.35
+**Optimization**
+- Forwarding `base_sphere_prim_path` & `base_sphere_prim_path_suffix` from robots.py for velocity visualization spheres in `velocity_commands()`
+- Pre-calculating values in `velocity_commands()` for velocity visualization spheres
+**Housekeeping**
+- Moved robot and lidar parameters to settings.py from robots.py  
+- Moved parameters to settings.py from `velocity_commands()` , `shape_entering_velocity()` & `interaction_velocity()`
+- Renamed and moved parameters to settings.py: [kf & ka] -> [forward_gain & angle_gain] 
+- Grouped and organized settings.py
+- Grouped import statements in main.py by type, use, and relevancy
+- Improved printouts of `velocity_commands()` and `send_robot_actions()`
+
+----------------------------------------------------------------------------------------------------
+
 13 May 2024 22:50
 
 __Changes:__

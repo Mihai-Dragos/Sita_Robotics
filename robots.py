@@ -6,7 +6,8 @@ import omni                                                     # Provides the c
 
 import numpy as np
 
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import num_robots
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import num_robots 
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import lineMode, typeRobot, lidarsDrawLines, lidarsDrawPoints, show_vel_spheres
 
 def create_robots(world, typeRobot, lineMode):
     assets_root_path = get_assets_root_path()
@@ -113,34 +114,19 @@ def create_lidars(lidarsDrawLines, lidarsDrawPoints):
 
     return
 
+# Base paths needed for create_vel_vis() and in velocity_commands() to get color values
+base_sphere_prim_path = "/World/Robot_"
+
+base_entering_sphere_prim_path_suffix = "/Entering_Sphere_"
+base_exploration_sphere_prim_path_suffix = "/Exploration_Sphere_"
+base_interaction_sphere_prim_path_suffix = "/Interaction_Sphere_"
+
+base_sphere_prim_path_suffix = []
+base_sphere_prim_path_suffix.append(base_entering_sphere_prim_path_suffix)
+base_sphere_prim_path_suffix.append(base_exploration_sphere_prim_path_suffix)
+base_sphere_prim_path_suffix.append(base_interaction_sphere_prim_path_suffix)
+
 def create_vel_vis(world):
-
-    # base_entering_sphere_prim_path = "/World/Robot_"
-    # base_entering_sphere_name = "entering_sphere_" 
-    # i = 0
-    # entering_color = np.array([0.0, 0.0, 0.0])
-    # entering_trans = -0.05
-
-    # world.scene.add(
-    #                 VisualSphere(
-    #                     prim_path=f"{base_entering_sphere_prim_path}{i:02}/chassis/Entering_Sphere_{i:02}",
-    #                     name=f"{base_entering_sphere_name}{i:02}",
-    #                     # translation=np.array([x, (0-actual_environment_y_min)/2, trans_height]),
-    #                     translation=np.array([entering_trans, 0, 0.15]),
-    #                     scale=np.array([0.02, 0.02, 0.02]),  
-    #                     color=entering_color
-    #                 ))
-
-    base_sphere_prim_path = "/World/Robot_"
-
-    base_entering_sphere_prim_path_suffix = "/Entering_Sphere_"
-    base_exploration_sphere_prim_path_suffix = "/Exploration_Sphere_"
-    base_interaction_sphere_prim_path_suffix = "/Interaction_Sphere_"
-
-    base_sphere_prim_path_suffix = []
-    base_sphere_prim_path_suffix.append(base_entering_sphere_prim_path_suffix)
-    base_sphere_prim_path_suffix.append(base_exploration_sphere_prim_path_suffix)
-    base_sphere_prim_path_suffix.append(base_interaction_sphere_prim_path_suffix)
 
     base_entering_sphere_name = "entering_sphere_"
     base_exploration_sphere_name = "exploration_sphere_"
@@ -180,17 +166,30 @@ def create_vel_vis(world):
                         scale=np.array([0.02, 0.02, 0.02]),  
                         color=vel_color[v]
                     ))
-    # return base_sphere_prim_path, base_sphere_prim_path_suffix
+                
+    # return # base_sphere_prim_path, base_sphere_prim_path_suffix
+
+def create_vel_vis_material():      # Commented, not using
+    # stage = omni.usd.get_context().get_stage()
+    # mtl_created_list = []
+    # spheres_prim = [[0,0,0] for _ in range(num_robots)]
+    # for i in range(num_robots):
+    #     for v in range(3):
+    #         omni.kit.commands.execute( 
+    #             "CreateAndBindMdlMaterialFromLibrary",
+    #             mdl_name="OmniPBR.mdl",
+    #             mtl_name=f"OmniPBR",
+    #             mtl_created_list=mtl_created_list,
+    #         )
+    #         path = f"{base_sphere_prim_path}{i:02}/chassis{base_sphere_prim_path_suffix[v]}{i:02}"
+    #         spheres_prim[i][v] = stage.GetPrimAtPath(path)
+    return # mtl_created_list, spheres_prim
 
 def setup_robots(world):
-    # Create Robots
-    lineMode = True
-    typeRobot = 1       # 1 -> Jetbot, 2 -> Kaya
-    create_robots(world, typeRobot, lineMode)
+    create_robots(world, typeRobot, lineMode)           # Create Robots
+    create_lidars(lidarsDrawLines, lidarsDrawPoints)    # Create Lidars
+    if show_vel_spheres:
+        create_vel_vis(world)                           # Create Velocity Visualisation Spheres
+    
+    return
 
-    # Create Lidars
-    lidarsDrawLines = False
-    lidarsDrawPoints = False
-    create_lidars(lidarsDrawLines, lidarsDrawPoints)
-
-    create_vel_vis(world)
