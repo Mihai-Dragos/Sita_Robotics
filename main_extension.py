@@ -8,10 +8,10 @@
 #
 
 import os
+import directory
 
 from omni.isaac.examples.base_sample import BaseSampleExtension
-from omni.isaac.examples.user_examples.git_isaac_sim.main import Main
-
+from main import Main
 
 class MainExtension(BaseSampleExtension):
     def on_startup(self, ext_id: str):
