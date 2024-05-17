@@ -8,9 +8,8 @@ import omni.isaac.core.utils.numpy.rotations as rot_utils
 
 import numpy as np
 
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_x_min, actual_environment_x_max 
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_y_min, actual_environment_y_max
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y, actual_environment_x_min, actual_environment_x_max, actual_environment_y_min, actual_environment_y_max
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import show_walls, show_door, show_grid_vis, show_victim_cube, show_test_wall
 from omni.isaac.examples.user_examples.git_isaac_sim.grid import normalized_x_steps, normalized_y_steps
 from omni.isaac.examples.user_examples.git_isaac_sim.grid import number_of_rows, number_of_columns
 
@@ -207,11 +206,11 @@ def create_grid_vis_cells(world):
         ))
 
 def setup_environment(world):
-    # world.scene.add_default_ground_plane()
+    ### Ground planes ###
+    # world.scene.add_default_ground_plane()                                                # Default
+    GroundPlane(prim_path="/World/groundPlane", size=10, color=np.array([0.1, 0.1, 0.4]))   # Custom
     
-    # PhysicsContext()
-    GroundPlane(prim_path="/World/groundPlane", size=10, color=np.array([0.1, 0.1, 0.4]))
-    # Dark Grey: np.array([0.11, 0.11, 0.11])
+    ### Lights ###
     light_1 = prim_utils.create_prim(
         "/World/Light_1",
         "SphereLight",
@@ -222,7 +221,6 @@ def setup_environment(world):
             "inputs:color": (1.0, 1.0, 1.0)
         }
     )
-
     light_2 = prim_utils.create_prim(
         "/World/Light_2",
         "SphereLight",
@@ -234,6 +232,7 @@ def setup_environment(world):
         }
     )
 
+    ### Camera ###
     TopDownCamera = Camera(
         prim_path="/World/TopDownCamera",
         position=np.array([0.0, 1.25, 13.0]),
@@ -260,55 +259,51 @@ def setup_environment(world):
     
     )
     
-    # print("before CAMERA", TopDownCamera.get_world_pose())
-    # TopDownCamera.set_world_pose([0.0, 1.25, 18.0], [0.0, 0.70711, 0.0, -0.70711])
-    # print("after CAMERA", TopDownCamera.get_world_pose())
-    
-    
-    # Create Walls
-    walls_color = np.array([1, 0.5, 0.5])
-    # walls_visual_material = 
-    # walls_physics_material = 
-    create_walls(world, walls_color)
-
-    # Create Grid Visualisation
-    create_grid_vis(world)
-
-    # victim_cube = world.scene.add(
-    #     FixedCuboid(
-    #         prim_path="/World/Victim_Cube",
-    #         name="victim_cube",
-    #         translation=np.array([-1.3, 1.6, 0.03]),
-    #         scale=np.array([0.05, 0.05, 0.05]),  
-    #         color=np.array([0.0, 1.0, 0.0]),
-    #         # visual_material=walls_visual_material,
-    #         # physics_material=walls_physics_material,
-    #     )
-    # )
-    
-    # # Door
-    # Cube_10 = world.scene.add(
-    #     FixedCuboid(
-    #         prim_path="/World/Walls/Cube_10",
-    #         name="cube_10",
-    #         translation=np.array([-0.625, 0.9, 0.25]),
-    #         scale=np.array([0.45, 0.1, 0.5]),  
-    #         color=np.array([0.5, 0, 0]),
-    #         # visual_material=walls_visual_material,
-    #         # physics_material=walls_physics_material,
-    #     )
-    # )
-    # # Test Wall for find_collision_points()
-    # Cube_11 = world.scene.add(
-    #     FixedCuboid(
-    #         prim_path="/World/Walls/Cube_11",
-    #         name="cube_11",
-    #         translation=np.array([-1.4, 0.0, 0.25]),
-    #         scale=np.array([0.1, 0.45, 0.5]),  
-    #         color=np.array([0.5, 0, 0]),
-    #         # visual_material=walls_visual_material,
-    #         # physics_material=walls_physics_material,
-    #     )
-    # )
+    ### Togglable Enviroment ###
+    if show_walls:
+        walls_color = np.array([1, 0.5, 0.5])
+        # walls_visual_material = 
+        # walls_physics_material = 
+        create_walls(world, walls_color)    # Create Walls
+    if show_grid_vis:
+        create_grid_vis(world)          # Create Grid Visualisation
+    if show_victim_cube:
+        victim_cube = world.scene.add(
+            FixedCuboid(
+                prim_path="/World/Victim_Cube",
+                name="victim_cube",
+                translation=np.array([-1.3, 1.6, 0.03]),
+                scale=np.array([0.05, 0.05, 0.05]),  
+                color=np.array([0.0, 1.0, 0.0]),
+                # visual_material=walls_visual_material,
+                # physics_material=walls_physics_material,
+            )
+        )
+    if show_door:
+        # Door
+        Cube_10 = world.scene.add(
+            FixedCuboid(
+                prim_path="/World/Walls/Cube_10",
+                name="cube_10",
+                translation=np.array([-0.625, 0.9, 0.25]),
+                scale=np.array([0.45, 0.1, 0.5]),  
+                color=np.array([0.5, 0, 0]),
+                # visual_material=walls_visual_material,
+                # physics_material=walls_physics_material,
+            )
+        )
+    if show_test_wall:
+        # Test Wall for find_collision_points()
+        Cube_11 = world.scene.add(
+            FixedCuboid(
+                prim_path="/World/Walls/Cube_11",
+                name="cube_11",
+                translation=np.array([-1.4, 0.0, 0.25]),
+                scale=np.array([0.1, 0.45, 0.5]),  
+                color=np.array([0.5, 0, 0]),
+                # visual_material=walls_visual_material,
+                # physics_material=walls_physics_material,
+            )
+        )
 
     return

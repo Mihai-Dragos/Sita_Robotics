@@ -1,3 +1,29 @@
+17 May 2024 21:29
+
+__Changes:__
+**Improve Demo**
+- Created `reverse_greyscale()` in grid.py to make robots explore away from spawn
+- Created `show_robot_obstacle_positions` feature in `find_collision_points()`. Toggled in settings.py. FPS [enabled/disabled]: `[ 12 / 18.5 ]`
+-- Created toggle `remove_unnessesary_obs_spheres`. FPS [enabled/disabled]: `[ 4.5 / 11 ] `
+- Created modifier `remove_redundant_obstacle_positions` in `find_collision_points()` to remove robot positions that lidar detected. Toggled in settings.py
+- Changed `send_robot_actions()`. Added condition to make robots stop and rotate as desired then move forward. This may be solved using a Pure Pursuit as well.
+-- 2 new local parameters to tune: `angle_threshold` and `angle_rotation_only_gain_multiplier`
+
+**Troubleshooting Additions**
+- Created shapes `rev_shape_array_25` and `rev_shape_array_25_assisted` to test `reverse_greyscale()` 
+
+**Housekeeping**
+- Added toggles to control environment.py using settings.py: `show_walls`, `show_door`, `show_grid_vis`, `show_victim_cube`, `show_test_wall`
+- Grouped import statements in environment.py by type and use
+- Grouped import statements in grid.py by type and use
+- Added toggles to control print/log in main.py: `show_log_velocity_commands`, `show_log_get_robot_target_rho`, `show_log_find_collision_points`, `show_interaction_velocity`, `show_log_in_shape_boundary`, `show_log_neighbouring_cells`, `show_log_shape_exploration_velocity`, `show_log_send_robot_actions`
+-- Affected: `velocity_commands()`, `get_robot_target_rho()`, `find_collision_points()`, `interaction_velocity()`, `in_shape_boundary()`, `neighbouring_cells()`, `shape_exploration_velocity()`, `send_robot_actions()`
+- Moved `r_body` from `occupied_cells()` to settings.py
+-- Updated value of `r_body` as robot is center is asymmetrical: [0.16 -> 0.09]. Created `r_body_size` with value 0.16.
+-- Note: If any problems with `occupied_cells`, this may be why. Use `r_body_size` to maybe resolve it.
+
+----------------------------------------------------------------------------------------------------
+
 14 May 2024 21:23
 
 __Changes:__

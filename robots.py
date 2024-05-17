@@ -161,7 +161,6 @@ def create_vel_vis(world):
                     VisualSphere(
                         prim_path=f"{base_sphere_prim_path}{i:02}/chassis{base_sphere_prim_path_suffix[v]}{i:02}",
                         name=f"{base_sphere_name[v]}{i:02}",
-                        # translation=np.array([x, (0-actual_environment_y_min)/2, trans_height]),
                         translation=np.array([vel_trans[v], 0, 0.15]),
                         scale=np.array([0.02, 0.02, 0.02]),  
                         color=vel_color[v]
