@@ -46,7 +46,7 @@ class Header():
 
         if DEBUG_TCP_CLIENT: 
             log(f"Header v{Header.version}", "Created header data:")
-            log("", f"{header.hex}")
+            log("", f"[{header.hex("|")}]")
         return header
     
     def get_size() -> int:
@@ -66,8 +66,8 @@ class Connection():
 
         self._messages_to_send = Queue[str]()
 
-        self.receiver = Thread(target=self._receiver)
-        self.sender = Thread(target=self._sender)
+        self.receiver = Thread(target=self.__receiver__)
+        self.sender = Thread(target=self.__sender__)
 
         def end_of_file_listener(called_socket:socket):
             if (called_socket == self.socket):
@@ -124,7 +124,7 @@ class Connection():
             log("", f"\"{message}\"")
         self._messages_to_send.put(message)
 
-    def _receiver(self):
+    def __receiver__(self):
         '''Program to run on a thread, which continously receives messages from the connection'''
         if DEBUG_TCP_CLIENT: log("Receiver", f"Start of receiver thread")
 
@@ -141,7 +141,7 @@ class Connection():
         self.__stop_reading__() # Incase the receiver was ended by exception
         if DEBUG_TCP_CLIENT: log("Receiver", f"Ending receiver thread")
 
-    def _sender(self):
+    def __sender__(self):
         '''Program to run on a thread, which writes all messages to the connection'''
         if DEBUG_TCP_CLIENT: log("Sender", f"Start of sender thread")
 
@@ -217,22 +217,22 @@ class Message():
 
         return bytes(data_received)
     
-    _end_of_file_listeners =  list[Callable[[socket], None]]()
+    __end_of_file_listeners__ =  list[Callable[[socket], None]]()
     '''List of listeners for the End Of File signal'''
 
     def add_end_of_file_listener(listener:Callable[[socket], None]):
         '''Add a listener to the End Of File signal'''
         if DEBUG_TCP_CLIENT: log("Message", f"Adding End Of File listener")
-        Message._end_of_file_listeners.append(listener)
+        Message.__end_of_file_listeners__.append(listener)
 
     def remove_end_of_file_listener(listener:Callable[[socket], None]):
         '''Remove a listener for the End Of File signal'''
         if DEBUG_TCP_CLIENT: log("Message", f"Removing End Of File listener")
-        Message._end_of_file_listeners.remove(listener)
+        Message.__end_of_file_listeners__.remove(listener)
 
     def end_of_file_handler(socket:socket):
         '''Alert all the listeners of the End Of File signal'''
-        for listener in Message._end_of_file_listeners:
+        for listener in Message.__end_of_file_listeners__:
             listener(socket)
 
 server_address = ("127.0.0.1", 5000)
