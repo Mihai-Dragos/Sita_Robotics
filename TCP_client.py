@@ -55,6 +55,7 @@ class Header():
 class Connection():
 
     def __init__(self, connected_socket:socket):
+        '''Create a connected with a connected socket.'''
         log("Connection", f"Initializing connection for " +
             f"connected socket {connected_socket.getsockname()}")
         self.socket = connected_socket
@@ -126,37 +127,37 @@ class Connection():
         debug_log("Receiver", f"Start of receiver thread")
 
         while self._reading:
-            received_data = self._receive()
+            received_data = self.__receive__()
             debug_log("Receiver", f"Received message from the connection")
         
             if (not received_data): 
                 continue
         
+            message = bytes.decode(received_data, "utf-8")
             log("Receiver", f"Received message:")
-            log("", f"\"{bytes.decode(received_data, "utf-8")}\"")
-        
-        self.__stop_reading__() # Incase the receiver was ended by exception
-        debug_log("Receiver", f"Ending receiver thread")
+            log("", f"\"{message}\"")
+
+        debug_log("Receiver", f"Reached end of receiver thread")
 
     def __sender__(self):
         '''Program to run on a thread, which writes all messages to the connection'''
         debug_log("Sender", f"Start of sender thread")
 
         while True:
-            data_to_send = self._messages_to_send.get()
+            message = self._messages_to_send.get()
             debug_log("Sender", f"Got new data to send from queue")
 
             if (not self._writing): 
                 break # End sender thread as we should stop writing 
             
             log("Sender", "Sending message:")
-            log("", f"{data_to_send}")
-            self._send(str.encode(data_to_send, "utf-8"))
+            log("", f"{message}")
+            data_to_send = str.encode(message, "utf-8")
+            self.__send__(data_to_send)
         
-        self.__stop_writing__() # Incase the receiver was ended by exception
-        debug_log("Sender", f"Ending sender thread")
+        debug_log("Sender", f"Reached end of sender thread")
 
-    def _receive(self) -> bytes:
+    def __receive__(self) -> bytes:
         '''Wait to receive a message from the socket connection'''
         try:
             debug_log("Connection", f"Waiting to receive message")
@@ -171,7 +172,7 @@ class Connection():
             debug_log("Exception", f"{exception}", True)
             self.__stop_reading__()
 
-    def _send(self, data:bytes):
+    def __send__(self, data:bytes):
         '''Send a message to the socket connection'''
         try:
             debug_log("Connection", f"Sending message")
@@ -215,7 +216,7 @@ class Message():
         return message_data
     
     def receive_sized_message(socket:socket, size:int) -> bytes:
-        '''Receive a message of specified size from the socket.'''
+        '''Receive a message of specified size from the socket'''
         data_received = bytearray()
 
         # Continue to read data until we got the specified amount
