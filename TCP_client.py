@@ -8,6 +8,9 @@ from util import log
 
 DEBUG_TCP_CLIENT = False
 
+def debug_log(context:str, message:str, shifted:bool=False):
+    if DEBUG_TCP_CLIENT: log(context, message, shifted)
+
 class Header():
     version = 0
     '''Specifies the header version to check header data for.'''
@@ -19,20 +22,17 @@ class Header():
         '''Describes number of bytes in the message'''
 
         if (len(header_data) != Header.get_size()):
-            if DEBUG_TCP_CLIENT: 
-                log(f"Header v{Header.version}", f"Header data has {len(header_data)}" +
-                    f" amount of bytes, while this version expects {Header.get_size()}")
+            debug_log(f"Header v{Header.version}", f"Header data has {len(header_data)}" +
+                f" amount of bytes, while this version expects {Header.get_size()}")
             return
         
         if (header_data[0] != Header.version):
-            if DEBUG_TCP_CLIENT: 
-                log(f"Header v{Header.version}", f"Header version {header_data[0]}" + 
+            debug_log(f"Header v{Header.version}", f"Header version {header_data[0]}" + 
                     f" does not match this header version {Header.version}")
             return
         
         self.message_size = int.from_bytes(header_data[1:5])
-        if DEBUG_TCP_CLIENT: log(f"Header v{Header.version}", 
-                                 f"Header received message size {self.message_size}")
+        debug_log(f"Header v{Header.version}", f"Header received message size {self.message_size}")
 
     def create(message_data:bytes) -> bytes:
         '''Get the header bytes'''
@@ -44,9 +44,8 @@ class Header():
         # 4 bytes specifying message length
         header += len(message_data).to_bytes(4, byteorder="big", signed=False)
 
-        if DEBUG_TCP_CLIENT: 
-            log(f"Header v{Header.version}", "Created header data:")
-            log("", f"[{header.hex("|")}]")
+        debug_log(f"Header v{Header.version}", "Created header data:")
+        debug_log("", f"[{header.hex("|")}]")
         return header
     
     def get_size() -> int:
@@ -76,21 +75,21 @@ class Connection():
         self.end_listener = end_of_file_listener
         Message.add_end_of_file_listener(self.end_listener)
 
-        if DEBUG_TCP_CLIENT: log("Connection", f"Starting receiver and sender thread")
+        debug_log("Connection", f"Starting receiver and sender thread")
         self.receiver.start()
         self.sender.start()
 
     def __stop_reading__(self):
         '''Stop the connection from reading on the socket'''
         if (self._reading):
-            if DEBUG_TCP_CLIENT: log("Connection", "Stop reading from the socket")
+            debug_log("Connection", "Stop reading from the socket")
             self._reading = False
             self.socket.shutdown(SHUT_RD)
     
     def __stop_writing__(self):
         '''Stop the connection from writing on the socket'''
         if (self._writing):
-            if DEBUG_TCP_CLIENT: log("Connection", "Stop writing to the socket")
+            debug_log("Connection", "Stop writing to the socket")
             self._writing = False
             self.send_message("") # Unblock sender from waiting
             self.socket.shutdown(SHUT_WR)
@@ -100,37 +99,35 @@ class Connection():
         log("Connection", f"Closing the TCP connection with socket {self.socket.getsockname()}")
         
         self.__stop_writing__()
-        if DEBUG_TCP_CLIENT: log("Connection", f"Waiting for sender thread to join")
+        debug_log("Connection", f"Waiting for sender thread to join")
         self.sender.join()
         
-        if DEBUG_TCP_CLIENT: log("Connection", f"Waiting for reading to stop " +
+        debug_log("Connection", f"Waiting for reading to stop " +
                                  f"from EOF signal or 4 second timeout")
         self.socket.settimeout(4)
         while(self._reading):
             time.sleep(0.1)
         
-        if DEBUG_TCP_CLIENT: log("Connection", "Waiting for receiver thread to join")
+        debug_log("Connection", "Waiting for receiver thread to join")
         self.receiver.join()
             
-        if DEBUG_TCP_CLIENT: 
-            log("Connection", f"Closing connection to socket {self.socket.getsockname()}")
+        debug_log("Connection", f"Closing connection to socket {self.socket.getsockname()}")
         self.socket.close()
         Message.remove_end_of_file_listener(self.end_listener)
 
     def send_message(self, message:str):
         '''Add a message to the connection to send'''
-        if DEBUG_TCP_CLIENT: 
-            log("Connection", f"Adding message to the queue:")
-            log("", f"\"{message}\"")
+        debug_log("Connection", f"Adding message to the queue:")
+        debug_log("", f"\"{message}\"")
         self._messages_to_send.put(message)
 
     def __receiver__(self):
         '''Program to run on a thread, which continously receives messages from the connection'''
-        if DEBUG_TCP_CLIENT: log("Receiver", f"Start of receiver thread")
+        debug_log("Receiver", f"Start of receiver thread")
 
         while self._reading:
             received_data = self._receive()
-            if DEBUG_TCP_CLIENT: log("Receiver", f"Received message from the connection")
+            debug_log("Receiver", f"Received message from the connection")
         
             if (not received_data): 
                 continue
@@ -139,15 +136,15 @@ class Connection():
             log("", f"\"{bytes.decode(received_data, "utf-8")}\"")
         
         self.__stop_reading__() # Incase the receiver was ended by exception
-        if DEBUG_TCP_CLIENT: log("Receiver", f"Ending receiver thread")
+        debug_log("Receiver", f"Ending receiver thread")
 
     def __sender__(self):
         '''Program to run on a thread, which writes all messages to the connection'''
-        if DEBUG_TCP_CLIENT: log("Sender", f"Start of sender thread")
+        debug_log("Sender", f"Start of sender thread")
 
         while True:
             data_to_send = self._messages_to_send.get()
-            if DEBUG_TCP_CLIENT: log("Sender", f"Got new data to send from queue")
+            debug_log("Sender", f"Got new data to send from queue")
 
             if (not self._writing): 
                 break # End sender thread as we should stop writing 
@@ -157,16 +154,16 @@ class Connection():
             self._send(str.encode(data_to_send, "utf-8"))
         
         self.__stop_writing__() # Incase the receiver was ended by exception
-        if DEBUG_TCP_CLIENT: log("Sender", f"Ending sender thread")
+        debug_log("Sender", f"Ending sender thread")
 
     def _receive(self) -> bytes:
         '''Wait to receive a message from the socket connection'''
-        if DEBUG_TCP_CLIENT: log("Connection", f"Waiting to receive message")
+        debug_log("Connection", f"Waiting to receive message")
         return Message.receive(self.socket)
 
     def _send(self, data:bytes):
         '''Send a message to the socket connection'''
-        if DEBUG_TCP_CLIENT: log("Connection", f"Sending message")
+        debug_log("Connection", f"Sending message")
         Message(data).send(self.socket)
 
 class Message():
@@ -177,10 +174,10 @@ class Message():
 
     def send(self, socket:socket):
         '''Send the created message to the specified socket'''
-        if DEBUG_TCP_CLIENT: log("Message", f"Sending message header")
+        debug_log("Message", f"Sending message header")
         socket.send(Header.create(self.data))
 
-        if DEBUG_TCP_CLIENT: log("Message", f"Sending message data")
+        debug_log("Message", f"Sending message data")
         socket.send(self.data)
 
     def receive(socket:socket) -> bytes:
@@ -189,12 +186,12 @@ class Message():
 
         if (not header_data): return
 
-        if DEBUG_TCP_CLIENT: log("Message", f"Received message header")
+        debug_log("Message", f"Received message header")
         message_data = Message.receive_sized_message(socket, Header(header_data).message_size)
 
         if (not message_data): return
 
-        if DEBUG_TCP_CLIENT: log("Message", f"Received message data")
+        debug_log("Message", f"Received message data")
         return message_data
     
     def receive_sized_message(socket:socket, size:int) -> bytes:
@@ -207,7 +204,7 @@ class Message():
 
             # Check if data was received
             if not data:
-                if DEBUG_TCP_CLIENT: log("Message", f"Received End Of File signal")
+                debug_log("Message", f"Received End Of File signal")
                 # No data received is End Of File signal, so we alert listeners
                 Message.end_of_file_handler(socket)
                 return
@@ -222,12 +219,12 @@ class Message():
 
     def add_end_of_file_listener(listener:Callable[[socket], None]):
         '''Add a listener to the End Of File signal'''
-        if DEBUG_TCP_CLIENT: log("Message", f"Adding End Of File listener")
+        debug_log("Message", f"Adding End Of File listener")
         Message.__end_of_file_listeners__.append(listener)
 
     def remove_end_of_file_listener(listener:Callable[[socket], None]):
         '''Remove a listener for the End Of File signal'''
-        if DEBUG_TCP_CLIENT: log("Message", f"Removing End Of File listener")
+        debug_log("Message", f"Removing End Of File listener")
         Message.__end_of_file_listeners__.remove(listener)
 
     def end_of_file_handler(socket:socket):
@@ -257,5 +254,5 @@ if __name__ == "__main__":
         if (input_string == "debug"): DEBUG_TCP_CLIENT = not DEBUG_TCP_CLIENT
         connection.send_message(input_string)
 
-    if DEBUG_TCP_CLIENT: log("TCP Client", f"Closing connection")
+    debug_log("TCP Client", f"Closing connection")
     connection.close()
