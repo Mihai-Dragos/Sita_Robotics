@@ -158,13 +158,33 @@ class Connection():
 
     def _receive(self) -> bytes:
         '''Wait to receive a message from the socket connection'''
-        debug_log("Connection", f"Waiting to receive message")
-        return Message.receive(self.socket)
+        try:
+            debug_log("Connection", f"Waiting to receive message")
+            return Message.receive(self.socket)
+        except TimeoutError:
+            debug_log("Connection", f"TimeOutError trying to receive message " +
+                      f"at socket {self.socket.getsockname()}")
+            self.__stop_reading__()
+        except Exception as exception:
+            debug_log("Connection", f"Exception occurred trying to receive message " +
+                      f"at socket {self.socket.getsockname()}")
+            debug_log("Exception", f"{exception}", True)
+            self.__stop_reading__()
 
     def _send(self, data:bytes):
         '''Send a message to the socket connection'''
-        debug_log("Connection", f"Sending message")
-        Message(data).send(self.socket)
+        try:
+            debug_log("Connection", f"Sending message")
+            Message(data).send(self.socket)
+        except TimeoutError:
+            debug_log("Connection", f"TimeOutError trying to send message " +
+                      f"at socket {self.socket.getsockname()}")
+            self.__stop_writing__()
+        except Exception as exception:
+            debug_log("Connection", f"Exception occurred trying to send message " +
+                      f"at socket {self.socket.getsockname()}")
+            debug_log("Exception", f"{exception}", True)
+            self.__stop_writing__()
 
 class Message():
 
