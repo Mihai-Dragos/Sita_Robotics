@@ -80,6 +80,7 @@ class Connection():
         if (auto_start): self.start()
 
     def start(self):
+        '''Start the connection to begin reading and writing data'''
         if not self.__started__:
             debug_log("Connection", f"Starting receiver and sender thread")
             self.receiver.start()
