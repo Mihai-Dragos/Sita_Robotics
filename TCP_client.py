@@ -54,13 +54,14 @@ class Header():
     
 class Connection():
 
-    def __init__(self, connected_socket:socket):
+    def __init__(self, connected_socket:socket, auto_start:bool=True):
         '''Create a connected with a connected socket.'''
         log("Connection", f"Initializing connection for " +
             f"connected socket {connected_socket.getsockname()}")
         self.socket = connected_socket
-        self._writing = True
-        self._reading = True
+        self.__writing__ = True
+        self.__reading__ = True
+        self.__started__ = False
 
         #tcp_socket.settimeout(60)
 
@@ -76,22 +77,26 @@ class Connection():
         self.end_listener = end_of_file_listener
         Message.add_end_of_file_listener(self.end_listener)
 
-        debug_log("Connection", f"Starting receiver and sender thread")
-        self.receiver.start()
-        self.sender.start()
+        if (auto_start): self.start()
+
+    def start(self):
+        if not self.__started__:
+            debug_log("Connection", f"Starting receiver and sender thread")
+            self.receiver.start()
+            self.sender.start()
 
     def __stop_reading__(self):
         '''Stop the connection from reading on the socket'''
-        if (self._reading):
+        if (self.__reading__):
             debug_log("Connection", "Stop reading from the socket")
-            self._reading = False
+            self.__reading__ = False
             self.socket.shutdown(SHUT_RD)
     
     def __stop_writing__(self):
         '''Stop the connection from writing on the socket'''
-        if (self._writing):
+        if (self.__writing__):
             debug_log("Connection", "Stop writing to the socket")
-            self._writing = False
+            self.__writing__ = False
             self.send_message("") # Unblock sender from waiting
             self.socket.shutdown(SHUT_WR)
         
@@ -106,7 +111,7 @@ class Connection():
         debug_log("Connection", f"Waiting for reading to stop " +
                                  f"from EOF signal or 4 second timeout")
         self.socket.settimeout(4)
-        while(self._reading):
+        while(self.__reading__):
             time.sleep(0.1)
         
         debug_log("Connection", "Waiting for receiver thread to join")
@@ -122,20 +127,26 @@ class Connection():
         debug_log("", f"\"{message}\"")
         self._messages_to_send.put(message)
 
+    __receive_listeners__ =  list[Callable[[bytes], None]]()
+    '''List of listeners for receiving connection data'''
+
+    def add_receive_listener(self, listener: Callable[[bytes], None]):
+        '''Add listener for receiving connection data'''
+        self.__receive_listeners__.append(listener)
+
     def __receiver__(self):
         '''Program to run on a thread, which continously receives messages from the connection'''
         debug_log("Receiver", f"Start of receiver thread")
 
-        while self._reading:
+        while self.__reading__:
             received_data = self.__receive__()
             debug_log("Receiver", f"Received message from the connection")
         
             if (not received_data): 
                 continue
         
-            message = bytes.decode(received_data, "utf-8")
-            log("Receiver", f"Received message:")
-            log("", f"\"{message}\"")
+            for listener in self.__receive_listeners__:
+                listener(received_data)
 
         debug_log("Receiver", f"Reached end of receiver thread")
 
@@ -147,7 +158,7 @@ class Connection():
             message = self._messages_to_send.get()
             debug_log("Sender", f"Got new data to send from queue")
 
-            if (not self._writing): 
+            if (not self.__writing__): 
                 break # End sender thread as we should stop writing 
             
             log("Sender", "Sending message:")
@@ -263,9 +274,17 @@ if __name__ == "__main__":
     # Connect socket to the server address
     tcp_socket.connect(server_address)
 
-    connection = Connection(tcp_socket)
+    connection = Connection(tcp_socket, False)
+    
+    def print_received_listener(received_data:bytes):
+        message = bytes.decode(received_data, "utf-8")
+        log("Receiver", f"Received message:")
+        log("", f"\"{message}\"")
+    connection.add_receive_listener(print_received_listener)
 
     connection.send_message("Hey server, how are you doing?")
+
+    connection.start()
 
     while True:
         time.sleep(0.1)
