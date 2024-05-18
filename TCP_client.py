@@ -85,6 +85,7 @@ class Connection():
             debug_log("Connection", f"Starting receiver and sender thread")
             self.receiver.start()
             self.sender.start()
+            self.__started__ = True
 
     def __stop_reading__(self):
         '''Stop the connection from reading on the socket'''
@@ -270,12 +271,15 @@ server_address = ("127.0.0.1", 5000)
 # Open Ipv4 TCP socket
 tcp_socket = socket(AF_INET, SOCK_STREAM)
 
-if __name__ == "__main__":
+def create_tcp_connection(auto_start:bool=True) -> Connection:
     log("TCP Client", f"Connecting socket to server address: {server_address}")
     # Connect socket to the server address
     tcp_socket.connect(server_address)
 
-    connection = Connection(tcp_socket, False)
+    return Connection(tcp_socket, auto_start)
+
+if __name__ == "__main__":
+    connection = create_tcp_connection(False)
     
     def print_received_listener(received_data:bytes):
         message = bytes.decode(received_data, "utf-8")
