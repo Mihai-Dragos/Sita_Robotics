@@ -1,4 +1,5 @@
-from TCP_client import *
+from util import log, debug_log
+from communication.TCP_client import *
 
 class Channel():
     def __init__(self):
@@ -27,7 +28,7 @@ while True:
     input_string = input()
     if (input_string == "stop"): break
     if (input_string == "debug"): 
-        DEBUG_TCP_CLIENT = not DEBUG_TCP_CLIENT
+        DEBUG_LOG = not DEBUG_LOG
         continue
     if (channel.is_finished()):
         channel.close()

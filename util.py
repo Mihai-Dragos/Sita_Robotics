@@ -15,6 +15,12 @@ def log(context:str, message:str, shifted:bool=False):
     if (shifted): print(f"{spacing}{context} | {message}\n", end="")
     else: print(f"{context}{spacing} | {message}\n", end="")
 
+DEBUG_LOG = False
+
+def debug_log(context:str, message:str, shifted:bool=False):
+    if DEBUG_LOG: log(context, message, shifted)
+
+
 total_performance = dict()
 previous_time = time.time()
 
