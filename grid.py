@@ -1,9 +1,10 @@
 import numpy as np
 
 from omni.isaac.examples.user_examples.git_isaac_sim.settings import input_shape, h, num_robots, r_avoid
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_x_min, actual_environment_x_max
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_y_min, actual_environment_y_max
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y, actual_environment_x_min, actual_environment_x_max, actual_environment_y_min, actual_environment_y_max
+from omni.isaac.examples.user_examples.git_isaac_sim.util import log
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import show_log_grid
+
 
 def greyscale(shape_array, h):
     grey_grid = np.copy(shape_array).astype(float)
@@ -20,6 +21,21 @@ def greyscale(shape_array, h):
     
     return output_grey_grid
 
+def reverse_greyscale(shape_array):
+    rev_grey_grid = np.copy(shape_array).astype(float)
+    rows, cols = rev_grey_grid.shape
+    rev_grey_grid = np.pad(rev_grey_grid, [(1,1),(1,1)], mode='constant', constant_values=0)
+    h = np.int((rows+cols)/2 - 1)
+    for _ in range(h):
+        for i in range(1,rows+1):
+            for j in range(1,cols+1):
+                local_max = np.max(rev_grey_grid[i-1:i+2,j-1:j+2])
+                rev_grey_grid[i,j] = max(local_max - 2/h, rev_grey_grid[i,j])
+        output_rev_grey_grid = rev_grey_grid[1:-1, 1:-1]
+    
+    return output_rev_grey_grid
+
+
 def calculate_rho_0():
     grey_shape = greyscale(input_shape, h) # grayscale(shape_array_0,h) # shape_array_2
     number_of_rows, number_of_columns = grey_shape.shape
@@ -32,6 +48,11 @@ def calculate_rho_0():
     return grey_shape, mid_point, number_of_rows, number_of_columns
 
 grey_grid, mid_point, number_of_rows, number_of_columns = calculate_rho_0()
+rev_grey_grid = reverse_greyscale(input_shape)
+# print(np.round(rev_grey_grid,decimals=2))
+# grey_grid = rev_grey_grid
+if show_log_grid:
+    log("grid.py", f"grey_grid:\n{np.array(grey_grid).round(decimals=2)}")
 normalized_x_steps = actual_environment_size_x/number_of_rows
 normalized_y_steps = actual_environment_size_y/number_of_columns
 

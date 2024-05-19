@@ -47,7 +47,28 @@
 #   Grouped and organized settings.py
 #   Grouped import statements in main.py by type, use, and relevancy
 #   Improved printouts of `velocity_commands()` and `send_robot_actions()`
-# 14 May 2024 21:20
+# 14 May 2024 21:29
+
+
+# Improve Demo
+#   Created `reverse_greyscale()` in grid.py to make robots explore away from spawn
+#   Created `show_robot_obstacle_positions` feature in `find_collision_points()`. Toggled in settings.py. FPS [enabled/disabled]: `[ 12 / 18.5 ]`
+#       Created toggle `remove_unnessesary_obs_spheres`. FPS [enabled/disabled]: `[ 4.5 / 11 ]`  
+#   Created modifier `remove_redundant_obstacle_positions` in `find_collision_points()` to remove robot positions that lidar detected. Toggled in settings.py
+#   Changed `send_robot_actions()`. Added condition to make robots stop and rotate as desired then move forward. This may be solved using a Pure Pursuit as well.
+#       2 new local parameters to tune: `angle_threshold` and `angle_rotation_only_gain_multiplier`
+# Troubleshooting Additions
+#   Created shapes `rev_shape_array_25` and `rev_shape_array_25_assisted` to test `reverse_greyscale()` 
+# Housekeeping
+#   Added toggles to control environment.py using settings.py: `show_walls`, `show_door`, `show_grid_vis`, `show_victim_cube`, `show_test_wall`
+#   Grouped import statements in environment.py by type and use
+#   Grouped import statements in grid.py by type and use
+#   Added toggles to control print/log in main.py: `show_log_velocity_commands`, `show_log_get_robot_target_rho`, `show_log_find_collision_points`, `show_interaction_velocity`, `show_log_in_shape_boundary`, `show_log_neighbouring_cells`, `show_log_shape_exploration_velocity`, `show_log_send_robot_actions`
+#       Affected: `velocity_commands()`, `get_robot_target_rho()`, `find_collision_points()`, `interaction_velocity()`, `in_shape_boundary()`, `neighbouring_cells()`, `shape_exploration_velocity()`, `send_robot_actions()`
+#   Moved `r_body` from `occupied_cells()` to settings.py
+#       Updated value of `r_body` as robot is center is asymmetrical: [0.16 -> 0.09]. Created `r_body_size` with value 0.16.
+#           If any problems with `occupied_cells`, this may be why. Use `r_body_size` to maybe resolve it.
+# 17 May 2024 21:28
 
 from omni.isaac.examples.base_sample import BaseSample
 
@@ -77,26 +98,36 @@ timeline = omni.timeline.get_timeline_interface()               # Used to intera
 lidarInterface = _range_sensor.acquire_lidar_sensor_interface() # Used to interact with the LIDAR
 
 
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import num_robots, input_shape, h, r_avoid, r_sense, r_check
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import num_robots, input_shape, h, r_avoid, r_sense, r_check, r_body
 from omni.isaac.examples.user_examples.git_isaac_sim.settings import entering_weight, exploration_weight, interaction_weight
 from omni.isaac.examples.user_examples.git_isaac_sim.settings import c_1, alpha, k_1, k_3, forward_gain, angle_gain
 from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y, actual_environment_x_min, actual_environment_x_max, actual_environment_y_min, actual_environment_y_max
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import show_vel_spheres
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import show_vel_spheres, show_robot_obstacle_positions
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import remove_redundant_obstacle_positions
 from omni.isaac.examples.user_examples.git_isaac_sim.grid import number_of_rows, number_of_columns, normalized_x_steps, normalized_y_steps
-from omni.isaac.examples.user_examples.git_isaac_sim.grid import grey_grid, get_grid_rho, get_xi_rho, get_pos_of_rho
+from omni.isaac.examples.user_examples.git_isaac_sim.grid import grey_grid, get_grid_rho, get_xi_rho, get_pos_of_rho, rev_grey_grid
 from omni.isaac.examples.user_examples.git_isaac_sim.environment import setup_environment
 from omni.isaac.examples.user_examples.git_isaac_sim.robots import setup_robots, base_sphere_prim_path, base_sphere_prim_path_suffix
 from omni.isaac.examples.user_examples.git_isaac_sim.util import log, performance_timestamp, mod
 
-# Inital v_rho0_i
-robs_initial_v_rho0_i = [[0,0,0] for _ in range(num_robots)]
 
+from omni.isaac.core.objects import VisualSphere
+from omni.isaac.examples.user_examples.git_isaac_sim.settings import show_log_velocity_commands, show_log_get_robot_target_rho, show_log_find_collision_points, show_interaction_velocity, show_log_in_shape_boundary, show_log_neighbouring_cells, show_log_shape_exploration_velocity, show_log_send_robot_actions
+
+# For Obstacle Collision Point Visualisation Spheres in find_colliion_points()
+obs_counter = 0
+highest_obs_index = [0 for _ in range(num_robots)]
+
+# For Velocity Visualisation Spheres in velocity_commands()
 # Methods 0 & 1 - Detailed in velocity_commands()
 mtl_created_list = []
 # Methods 1 & 2 - Detailed in velocity_commands()
 spheres_prim = [[0,0,0] for _ in range(num_robots)]
 spheres_mat = [[0,0,0] for _ in range(num_robots)]
 mtl_prim = [[0,0,0] for _ in range(num_robots)] 
+
+# Inital v_rho0_i
+robs_initial_v_rho0_i = [[0,0,0] for _ in range(num_robots)]
 
 class Main(BaseSample):
 
@@ -197,9 +228,11 @@ class Main(BaseSample):
         v.append(applied_interaction)
         v_i = np.sum([v[j] for j in range(len(v))], axis=0)
         
-        log("velocity_commands()", f"Rob: {robot_index} | Velocity commands: {np.round(v_i, decimals=2)}")
-        log("individual raw", f"Ent:{np.round(raw_entering, decimals=2)} | Exp:{np.round(raw_exploration, decimals=2)} | Int:{np.round(raw_interaction, decimals=2)}", True)
-        log("individual weighted", f"Ent:{np.round(v[0], decimals=2)} | Exp:{np.round(v[1], decimals=2)} | Int:{np.round(v[2], decimals=2)}", True)
+        if show_log_velocity_commands:
+
+            log("velocity_commands()", f"Rob: {robot_index} | Velocity commands: {np.round(v_i, decimals=2)}")
+            log("individual raw", f"Ent:{np.round(raw_entering, decimals=2)} | Exp:{np.round(raw_exploration, decimals=2)} | Int:{np.round(raw_interaction, decimals=2)}", True)
+            log("individual weighted", f"Ent:{np.round(v[0], decimals=2)} | Exp:{np.round(v[1], decimals=2)} | Int:{np.round(v[2], decimals=2)}", True)
 
         if show_vel_spheres:
             entering_mag = np.linalg.norm(v[0])
@@ -215,7 +248,8 @@ class Main(BaseSample):
             vel_colors.append(entering_color)
             vel_colors.append(exploration_color)
             vel_colors.append(interaction_color)
-            log("induvidual color %", f"Ent (R): {np.round(vel_colors[0][0]*50, decimals=2)}% | Exp (G): {np.round(vel_colors[1][1]*50, decimals=2)}% | Int (B): {np.round(vel_colors[2][2]*50, decimals=2)}%", True)
+            if show_log_velocity_commands:
+                log("induvidual color %", f"Ent (R): {np.round(vel_colors[0][0]*50, decimals=2)}% | Exp (G): {np.round(vel_colors[1][1]*50, decimals=2)}% | Int (B): {np.round(vel_colors[2][2]*50, decimals=2)}%", True)
             
             stage = omni.usd.get_context().get_stage()
 
@@ -382,7 +416,8 @@ class Main(BaseSample):
         target_rho = [curr_rho_x + local_min_ind[0] -1, curr_rho_y + local_min_ind[1] -1]
         
         if (local_min == 0) & (np.array_equal(local_min_ind,[1,1])):
-            log("get_robot_target_rho()", f"robot {robot_index} IN MIDDLE, STOP !")
+            if show_log_get_robot_target_rho:
+                log("get_robot_target_rho()", f"Robot {robot_index} inside shape")
 
         return target_rho
 
@@ -489,7 +524,8 @@ class Main(BaseSample):
 
         # print(f"find_collision_points()       | coll_ind: {coll_ind} | coll_ind.size {coll_ind.size}")
         if not coll_ind.size:           # If no walls, return empty array # Same as if len(coll_ind) <= 0
-            log("find_collision_points()", "No collision points found, output set to []")
+            if show_log_find_collision_points: 
+                log("find_collision_points()", "No collision points found, output set to []")
             return np.array(obstacle_pos)
         
         # If walls only then do calculations
@@ -503,17 +539,88 @@ class Main(BaseSample):
             for i in range(coll_ind.size): # Should work same as for i in range(len(coll_ind)):
                 obstacle_pos.append( [ float(curr_pos[0] + distance[coll_ind[i]]*np.cos(curr_ori[2] + angle[coll_ind[i]])) , float(curr_pos[1] + distance[coll_ind[i]]*np.sin(curr_ori[2] + angle[coll_ind[i]])) , 0.0 ] )
                 
-        log("find_collision_points()", f"Obstacles:\n{np.array(obstacle_pos).round(decimals=2)}")
-        
+
+        # Modifier toggled in settings.py
+        if remove_redundant_obstacle_positions:
+            show_log_remove_redundant_obstacle_positions = False
+            robot_pos = []
+            for l in range(num_robots):
+                if l != robot_index:
+                    robot_pos.append(self.get_robot_pos(l))
+            if show_log_remove_redundant_obstacle_positions:
+                print(f"Rob: {robot_index} Obstacles:\n{np.array(obstacle_pos).round(decimals=2)}")
+
+            # Hardcode
+            safety_distance = 0.05
+            indicies_to_delete = [] 
+            for k in range(len(obstacle_pos)):
+                for m in range(len(robot_pos)):
+                    dist = np.linalg.norm(np.subtract(robot_pos[m], obstacle_pos[k]))
+                    if  dist < (np.sqrt(2))*r_body + safety_distance:
+                        if show_log_remove_redundant_obstacle_positions:
+                            print(f"Redundant position: {np.round(obstacle_pos[k],decimals=2)}, index: {k}. Too close to robot position: {np.round(robot_pos[m],decimals=2)}, distance: {np.round(dist,decimals=2)}m")
+                        indicies_to_delete.append(k)
+            # print(f"indicies_to_delete: {indicies_to_delete}")
+            if np.array(indicies_to_delete).size > 0:               # Only attempt to delete if indicies_to_delete not empty list
+                for n in range(len(indicies_to_delete)-1, -1, -1):  # Have to go in reverse order to ensure correct values deleted
+                    del obstacle_pos[indicies_to_delete[n]]
+                if show_log_remove_redundant_obstacle_positions:
+                    print(f"Redundant position(s) {indicies_to_delete} deleted, updated Rob {robot_index} Obstacles:\n{np.array(obstacle_pos).round(decimals=2)}")
+
+        # Visualisation 
+        if show_robot_obstacle_positions:
+
+            world = self.get_world()
+            base_obs_sphere_prim_path = f"/World/Obstacles/Obstacles_"
+            base_obs_sphere_name = f"Obstacle"
+            
+
+            remove_unnessesary_obs_spheres = False       # True: 4.5 fps False: 11-12 fps
+            if remove_unnessesary_obs_spheres:
+                global highest_obs_index
+                print(f"highest_obs_index[robot_index]: {highest_obs_index[robot_index]}")
+                if prims_utils.get_prim_at_path(f"{base_obs_sphere_prim_path}{robot_index:02}_{np.int(highest_obs_index[robot_index]):02}").IsValid():
+                    prims_utils.delete_prim(f"{base_obs_sphere_prim_path}{robot_index:02}_{np.int(highest_obs_index[robot_index]):02}")
+                    if highest_obs_index[robot_index] > 0:
+                        highest_obs_index[robot_index] -= 1
+                        print(f"Updated lower highest_obs_index | Rob: {robot_index}, Highest index: {highest_obs_index[robot_index]}")
+
+            colors = []
+            colors.append([1.0, 0.0, 0.0])      # Robot 0
+            colors.append([0.0, 1.0, 0.0])      # Robot 1
+            colors.append([0.0, 0.0, 1.0])      # Robot 2
+            global obs_counter
+            
+            for j in range(len(obstacle_pos)):
+                ox, oy, _ = obstacle_pos[j]
+                world.scene.add(
+                    VisualSphere(
+                            prim_path=f"{base_obs_sphere_prim_path}{robot_index:02}_{j:02}",
+                            name=f"{base_obs_sphere_name}{obs_counter}",
+                            translation=np.array([ox, oy, 0.15]),
+                            scale=np.array([0.02, 0.02, 0.02]),  
+                            color=np.array(colors[robot_index])
+                        ))
+                obs_counter += 1
+                print(f"obs_counter: {obs_counter}")
+                if remove_unnessesary_obs_spheres:
+                    if j > highest_obs_index[robot_index]:
+                        highest_obs_index[robot_index] = j
+                        print(f"Updated higher highest_obs_index | Rob: {robot_index}, Highest index: {highest_obs_index[robot_index]}")
+
+        if show_log_find_collision_points:
+            log("find_collision_points()", f"Obstacles:\n{np.array(obstacle_pos).round(decimals=2)}")
+
         return np.array(obstacle_pos)
- 
+
     def interaction_velocity(self, robot_index):
         
         N = self.neighboring_i(robot_index)
         O = self.find_collision_points(robot_index)
         
         if (len(O) <= 0) and (len(N) <= 0):     # Neither N nor O so no calculations needed return [0.0, 0.0, 0.0]
-            log("interaction_velocity()", f"Neither Neighbours NOR Collision points, v_int_i set to [0.0, 0.0, 0.0]")
+            if show_interaction_velocity:
+                log("interaction_velocity()", f"Neither Neighbours NOR Collision points, v_int_i set to [0.0, 0.0, 0.0]")
             v_int_i = [0.0, 0.0, 0.0]
             return np.array(v_int_i)
         
@@ -521,19 +628,22 @@ class Main(BaseSample):
         p = []
         
         if (len(N) <= 0):               # If no N, only calculate term1 and set term2 to [0.0, 0.0, 0.0]
-            log("interaction_velocity()", f"No Neighbours, only Collision points found, v_int_i term2 set to [0.0, 0.0, 0.0]")
+            if show_interaction_velocity:
+                log("interaction_velocity()", f"No Neighbours, only Collision points found, v_int_i term2 set to [0.0, 0.0, 0.0]")
             length_sum = len(O) # used to be len(O)-1 
             for j in range(length_sum):
                 p.append(O[j]) 
             term2 = [0.0, 0.0, 0.0]
         else:                           # If N, calculate both term1 and term2
             if (len(O) <= 0):               # If no O and only N, change length of sum, length_sum, and collision point positions, p.
-                log("interaction_velocity()", f"Only Neighbours, no Collision points")
+                if show_interaction_velocity:
+                    log("interaction_velocity()", f"Only Neighbours, no Collision points")
                 length_sum = len(N)-1
                 for j in range(length_sum):
                     p.append(self.get_robot_pos(N[j])) 
             else:                           # If both O and N, change length of sum, length_sum, and collision point positions, p.
-                log("interaction_velocity()", f"Neighbours AND Collision points found")
+                if show_interaction_velocity:
+                    log("interaction_velocity()", f"Neighbours AND Collision points found")
                 length_sum = len(N)+len(O)-1
                 for j in range(length_sum):
                     if j < len(N):
@@ -567,7 +677,8 @@ class Main(BaseSample):
         p = np.array(p)
 
         if len(p) <= 0:         # If error with find_collision_points_index, set term1 to [0.0, 0.0, 0.0]
-            log("interaction_velocity()", f"Error with calculating term1, v_int_i term1 set to [0.0, 0.0, 0.0]")
+            if show_interaction_velocity:
+                log("interaction_velocity()", f"Error with calculating term1, v_int_i term1 set to [0.0, 0.0, 0.0]")
             term1 = [0.0, 0.0, 0.0]
         else:                   # If no error calculate term1
             # Selected the position of center of cell the robot is currently in
@@ -633,9 +744,11 @@ class Main(BaseSample):
             in_shape = False
         elif local_max_color == 0:
             in_shape = True
+
+        if show_log_in_shape_boundary:
+            log("in_shape_boundary()", f"Rob: {robot_index} | in_shape?: {in_shape} | max_color: {np.round(local_max_color,2)} | r_sense_cells x:{r_sense_cell_x} y:{r_sense_cell_x} ")
+            log("", f"area:\n{np.round(area,2)}\n")
         
-        log("in_shape_boundary()", f"Rob: {robot_index} | in_shape?: {in_shape} | max_color: {np.round(local_max_color,2)} | r_sense_cells x:{r_sense_cell_x} y:{r_sense_cell_x} ")
-        log("", f"area:\n{np.round(area,2)}\n")
         return in_shape, r_sense_cell_x, r_sense_cell_y, area
 
     def occupied_cells(self):
@@ -651,8 +764,6 @@ class Main(BaseSample):
         # Center cell coordinates
         center_i = (x_numcells - 1) // 2 
         center_j = (y_numcells - 1) // 2
-
-        r_body = 0.16 # Robot dimensions 0.160 x 0.135 x 0.260 [X,Y,Z]
 
         # Process each robot
         for n in range(num_robots):
@@ -707,7 +818,8 @@ class Main(BaseSample):
                             if ((curr_rho_x-r_sense_cell_x+i, curr_rho_y-r_sense_cell_y+j) not in occupied_cells):
                                 M_cells.append([curr_rho_x-r_sense_cell_x+i , curr_rho_y-r_sense_cell_y+j])
 
-        log("neighbouring_cells()", f"Rob: {robot_index} | include occupied?: {in_shape} |  M_cells: {M_cells}")
+        if show_log_neighbouring_cells:
+            log("neighbouring_cells()", f"Rob: {robot_index} | include occupied?: {in_shape} |  M_cells: {M_cells}")
         # print("M_cells_Debug:\n",M_cells_debug)
         return M_cells
     
@@ -717,7 +829,8 @@ class Main(BaseSample):
         M_i_neigh = self.neighbouring_cells(robot_index)
         
         if len(M_i_neigh) <= 0:
-            log("shape_exploration_velocity()", f"No valid cells found, v_exp_i set to [0.0, 0.0]")
+            if show_log_shape_exploration_velocity:
+                log("shape_exploration_velocity()", f"No valid cells found, v_exp_i set to [0.0, 0.0]")
             v_exp_i = [0.0, 0.0]
             return v_exp_i
         
@@ -754,14 +867,28 @@ class Main(BaseSample):
         for robot_index in range(num_robots): 
             v_x, v_y = self.velocity_commands(robot_index) 
             curr_rot = self.get_robot_ori_euler(robot_index)
-            forward_raw = (((v_x ** 2) + (v_y ** 2)) ** 0.5)
-            forward = forward_gain * forward_raw
+            
             angle_raw = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
             angle_raw = np.deg2rad(angle_raw)
-            angle = angle_gain * (angle_raw)
+            
+            # print(f"Rob: {robot_index} Angle: {np.rad2deg(angle_raw).round(decimals=2)}")
+            angle_threshold = 90 # degrees
+            angle_rotation_only_gain_multiplier = 1.5
+            if np.abs(angle_raw) > np.deg2rad(angle_threshold):
+                print(f"Rob: {robot_index} angle too large: {np.rad2deg(angle_raw).round(decimals=2)} degrees. Spinning faster and set forward velocity to 0")
+                angle = angle_rotation_only_gain_multiplier * angle_gain * (angle_raw)
+                forward_raw = 0
+                forward = 0
+                
+            else:
+                angle = angle_gain * (angle_raw)
+                forward_raw = (((v_x ** 2) + (v_y ** 2)) ** 0.5)
+                forward = forward_gain * forward_raw
+
             self.robots[robot_index].apply_action(self._Vel_controller.forward(command=[forward, angle]))
-            log("send_robot_actions()", f"Rob: {robot_index} | Velocities forward: {np.round(forward, decimals=2)} m/s | angular: {np.round(angle, decimals=2)} rads/s")
-            log("", f"Raw velocities forward: {np.round(forward_raw, decimals=2)} m/s | angular: {np.round(angle_raw, decimals=2)} rads/s", True)
+            if show_log_send_robot_actions:
+                log("send_robot_actions()", f"Rob: {robot_index} | Velocities forward: {np.round(forward, decimals=2)} m/s | angular: {np.round(angle, decimals=2)} rads/s")
+                log("", f"Raw velocities forward: {np.round(forward_raw, decimals=2)} m/s | angular: {np.round(angle_raw, decimals=2)} rads/s", True)
     
     # End Velocity command
 

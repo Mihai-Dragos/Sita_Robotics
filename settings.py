@@ -16,13 +16,33 @@ k_3 = 25    	# 20,25,30 in Paper			# Hardcode parameter interaction_velocity()
 
 forward_gain = 0.02							# Hardcode parameters for differential drive
 angle_gain = 0.8							# |
+
+# Modifer
+remove_redundant_obstacle_positions = True	# Remove other robots' positions in find_collision_points()
 ######################################
 
 
 ##### Visualisation Parameters #####
 show_vel_spheres = True						# Show Velocity command contributions visually?
+show_grid_vis = True
+show_robot_obstacle_positions = False #True
 #####################################
 
+##### Print\Log Parameters #####
+# main.py
+show_log_get_robot_target_rho = False
+show_log_find_collision_points = False
+show_interaction_velocity = False
+show_log_in_shape_boundary = False
+show_log_neighbouring_cells = False
+show_log_shape_exploration_velocity = False
+
+show_log_velocity_commands = True
+show_log_send_robot_actions = True
+
+# grid.py
+show_log_grid = False
+################################
 
 ##### Robot Parameters #####
 num_robots = 3 					# Number of robots
@@ -30,6 +50,9 @@ lineMode = True					# True: Robots spawn in a line; False: Robots spawn in a gri
 typeRobot = 1       			# 1 -> Jetbot, 2 -> Kaya
 lidarsDrawLines = False			# Show lidar lines?
 lidarsDrawPoints = False		# Show lidar points of surface?
+
+r_body_size = 0.16 				# Robot dimensions 0.160 x 0.135 x 0.260 [X,Y,Z]
+r_body = 0.09					# Robot is -0.09 away from center in X, so should take that as widest	
 ############################
 
 
@@ -42,6 +65,12 @@ h = 4 #2 								# Hardcode Number of iterations for greyscale()
 # actual_environment_x_max = 1.4
 # actual_environment_y_min = -0.4
 # actual_environment_y_max = 0.8
+
+show_walls = True
+show_door = False
+
+show_test_wall = False
+show_victim_cube = False
 
 a_e_v_amount = 3 #1.5					# Hardcode set enviroment size in meters to test shape_entering_velocity()
 actual_environment_x_min = -a_e_v_amount
