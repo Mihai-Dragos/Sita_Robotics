@@ -1,10 +1,9 @@
 import numpy as np
 
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import input_shape, h, num_robots, r_avoid
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y, actual_environment_x_min, actual_environment_x_max, actual_environment_y_min, actual_environment_y_max
-from omni.isaac.examples.user_examples.git_isaac_sim.util import log
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import show_log_grid
-
+from settings import input_shape, h, num_robots, r_avoid
+from settings import actual_environment_size_x, actual_environment_size_y, actual_environment_x_min, actual_environment_x_max, actual_environment_y_min, actual_environment_y_max
+from util import log
+from settings import show_log_grid
 
 def greyscale(shape_array, h):
     grey_grid = np.copy(shape_array).astype(float)
@@ -25,7 +24,7 @@ def reverse_greyscale(shape_array):
     rev_grey_grid = np.copy(shape_array).astype(float)
     rows, cols = rev_grey_grid.shape
     rev_grey_grid = np.pad(rev_grey_grid, [(1,1),(1,1)], mode='constant', constant_values=0)
-    h = np.int((rows+cols)/2 - 1)
+    h = np.int32((rows+cols)/2 - 1)
     for _ in range(h):
         for i in range(1,rows+1):
             for j in range(1,cols+1):
@@ -68,7 +67,7 @@ def get_n_cell_l_cell():
 
 n_cell, l_cell = get_n_cell_l_cell()
 
-def get_xi_rho(rho_x, rho_y): 
+def get_xi_rho(rho_x, rho_y) -> float: 
     # Get color value of the cell
     xi_rho_i =  grey_grid[rho_x, rho_y]
     return xi_rho_i # Return color value of the cell

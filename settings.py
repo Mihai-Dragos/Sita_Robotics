@@ -1,4 +1,4 @@
-from omni.isaac.examples.user_examples.git_isaac_sim.shapes import *
+from shapes import *
 
 ##### Research Paper Parameters #####
 r_avoid = 0.4 # 1.5 in Paper 				# Hardcode avoid radius of robots, used for calculating l_cell
