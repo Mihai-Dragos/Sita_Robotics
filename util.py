@@ -12,8 +12,8 @@ def log(context:str, message:str, shifted:bool=False):
     if (len(context) < LOG_CONTEXT_SPACE):
         for _ in range(LOG_CONTEXT_SPACE - len(context)):
             spacing += " "
-    if (shifted): print(f"{spacing}{context} | {message}")
-    else: print(f"{context}{spacing} | {message}")
+    if (shifted): print(f"{spacing}{context} | {message}\n", end="")
+    else: print(f"{context}{spacing} | {message}\n", end="")
 
 total_performance = dict()
 previous_time = time.time()
