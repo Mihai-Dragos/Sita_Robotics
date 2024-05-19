@@ -110,6 +110,7 @@ from environment import setup_environment
 from robot_setup import setup_robots, base_sphere_prim_path, base_sphere_prim_path_suffix
 from util import log, performance_timestamp, mod
 from robot import Robot
+from communicator import send_robot_data
 
 from omni.isaac.core.objects import VisualSphere
 from settings import show_log_velocity_commands, show_log_get_robot_target_rho, show_log_find_collision_points, show_interaction_velocity, show_log_in_shape_boundary, show_log_neighbouring_cells, show_log_shape_exploration_velocity, show_log_send_robot_actions
@@ -802,6 +803,10 @@ class Main(BaseSample):
 
     def send_robot_actions(self, step_size):
     ##### Start of Print Test Area #####
+
+        for robot in self.robots:
+            robot.update()
+            send_robot_data(robot)
 
     # Start Velocity command:
 

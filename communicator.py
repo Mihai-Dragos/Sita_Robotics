@@ -1,7 +1,7 @@
 from util import log, debug_log
-from communication.robot_data import RobotData
+from communication.robot_data import RobotData, RandomRobot
 from communication.TCP_client import *
-from settings import num_robots
+from robot import Robot
 
 import json
 
@@ -25,11 +25,11 @@ class Channel():
     def is_finished(self):
         return not self.connection._reading and not self.connection._writing
 
-def send_robot_data():
-    for robot_index in range(num_robots):
-        data = RobotData(robot_index)
-        message = json.dumps(data)
-        channel.send_message(message)
+def send_robot_data(robot:Robot):
+    # data = RobotData(robot)
+    data = RobotData(RandomRobot())
+    message = json.dumps(data.__dict__)
+    channel.send_message(message)
 
 channel = Channel()
 while True:
