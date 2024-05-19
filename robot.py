@@ -13,9 +13,8 @@ class Robot:
     ori:np.ndarray
     euler:np.ndarray
     vel:np.ndarray
-    rho:list[int] # int?
+    rho:list[int]
     xi_rho:float
-    p_rho0:list[float]
     p_rho_i:list[float]
     v_rho0:float
     
