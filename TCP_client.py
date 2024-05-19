@@ -65,7 +65,7 @@ class Connection():
 
         #tcp_socket.settimeout(60)
 
-        self._messages_to_send = Queue[str]()
+        self.__data_to_send__ = Queue[bytes]()
 
         self.receiver = Thread(target=self.__receiver__)
         self.sender = Thread(target=self.__sender__)
@@ -123,11 +123,11 @@ class Connection():
         self.socket.close()
         Message.remove_end_of_file_listener(self.end_listener)
 
-    def send_message(self, message:str):
+    def send_message(self, data:bytes):
         '''Add a message to the connection to send'''
         debug_log("Connection", f"Adding message to the queue:")
-        debug_log("", f"\"{message}\"")
-        self._messages_to_send.put(message)
+        debug_log("", f"\"{data}\"")
+        self.__data_to_send__.put(data)
 
     __receive_listeners__ =  list[Callable[[bytes], None]]()
     '''List of listeners for receiving connection data'''
@@ -157,7 +157,7 @@ class Connection():
         debug_log("Sender", f"Start of sender thread")
 
         while True:
-            message = self._messages_to_send.get()
+            message = self.__data_to_send__.get()
             debug_log("Sender", f"Got new data to send from queue")
 
             if (not self.__writing__): 
@@ -165,8 +165,7 @@ class Connection():
             
             log("Sender", "Sending message:")
             log("", f"{message}")
-            data_to_send = str.encode(message, "utf-8")
-            self.__send__(data_to_send)
+            self.__send__(message)
         
         debug_log("Sender", f"Reached end of sender thread")
 
@@ -287,7 +286,7 @@ if __name__ == "__main__":
         log("", f"\"{message}\"")
     connection.add_receive_listener(print_received_listener)
 
-    connection.send_message("Hey server, how are you doing?")
+    connection.send_message(str.encode("Hey server, how are you doing?", "utf-8"))
 
     connection.start()
 
@@ -297,7 +296,7 @@ if __name__ == "__main__":
         input_string = input()
         if (input_string == "stop"): break
         if (input_string == "debug"): DEBUG_TCP_CLIENT = not DEBUG_TCP_CLIENT
-        connection.send_message(input_string)
+        connection.send_message(str.encode(input_string))
 
     debug_log("TCP Client", f"Closing connection")
     connection.close()
