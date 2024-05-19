@@ -593,7 +593,6 @@ class Main(BaseSample):
                         p.append(O[j-len(N)])
 
             
-            v_i = self.get_robot_vel(robot_index)
             v_i = self.robots[robot_index].vel
             # print(f"Before: v_i: {v_i} | v_i.size: {v_i.size}")
             if v_i.size <= 1:
