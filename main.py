@@ -107,7 +107,7 @@ from omni.isaac.examples.user_examples.git_isaac_sim.settings import remove_redu
 from omni.isaac.examples.user_examples.git_isaac_sim.grid import number_of_rows, number_of_columns, normalized_x_steps, normalized_y_steps
 from omni.isaac.examples.user_examples.git_isaac_sim.grid import grey_grid, get_grid_rho, get_xi_rho, get_pos_of_rho, rev_grey_grid
 from omni.isaac.examples.user_examples.git_isaac_sim.environment import setup_environment
-from omni.isaac.examples.user_examples.git_isaac_sim.robots import setup_robots, base_sphere_prim_path, base_sphere_prim_path_suffix
+from omni.isaac.examples.user_examples.git_isaac_sim.robot_setup import setup_robots, base_sphere_prim_path, base_sphere_prim_path_suffix
 from omni.isaac.examples.user_examples.git_isaac_sim.util import log, performance_timestamp, mod
 
 
