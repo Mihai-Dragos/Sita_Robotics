@@ -12,7 +12,7 @@ class Channel():
 
     def on_receive_message(data:bytes):
         log("Channel", f"Received message")
-        log("", f"{data.decode("utf-8")}")
+        log("", f"\'{data.decode("utf-8")}\'")
 
     def close(self):
         self.connection.close()

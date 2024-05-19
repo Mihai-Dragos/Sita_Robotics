@@ -132,7 +132,7 @@ class Connection():
     def send_message(self, data:bytes):
         '''Add a message to the connection to send'''
         debug_log("Connection", f"Adding message to the queue:")
-        debug_log("", f"\"{data}\"")
+        debug_log("", f"\'{data}\'")
         self._data_to_send.put(data)
 
     _receive_listeners =  list[Callable[[bytes], None]]()
@@ -289,7 +289,7 @@ if __name__ == "__main__":
     def print_received_listener(received_data:bytes):
         message = bytes.decode(received_data, "utf-8")
         log("Receiver", f"Received message:")
-        log("", f"\"{message}\"")
+        log("", f"\'{message}\'")
     connection.add_receive_listener(print_received_listener)
 
     connection.send_message(str.encode("Hey server, how are you doing?", "utf-8"))
