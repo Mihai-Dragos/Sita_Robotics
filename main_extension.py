@@ -9,6 +9,7 @@
 
 import os
 import directory
+directory.directory_setup()
 
 from omni.isaac.examples.base_sample import BaseSampleExtension
 from main import Main

@@ -11,29 +11,29 @@ class Robot:
     instance:WheeledRobot
     pos:np.ndarray
     ori:np.ndarray
-    euler:np.ndarray
+    euler_ori:np.ndarray
     vel:np.ndarray
     rho:list[int]
     xi_rho:float
     p_rho_i:list[float]
     v_rho0:float
     
-    def __init__(self, index:int):
+    def __init__(self, world, index:int):
         self.index = index
-        self.instance = self._world.scene.get_object(f"{base_robot_name}{self.index:02}")
+        self.instance = world.scene.get_object(f"{base_robot_name}{self.index:02}")
         self.update()
 
     def update(self):
         # Compute pos, requires set instance
         pos, ori = self.instance.get_world_pose()
-        pos, ori = np.array(pos), np.array(ori)
+        self.pos, self.ori = np.array(pos), np.array(ori)
 
         # Compute vel, requires set instance
         vel = self.instance.get_linear_velocity()
         self.vel = np.array(vel)
         
         # Compute euler rotation, require up to date ori
-        self.euler = self.__compute_euler__()
+        self.euler_ori = self.__compute_euler_ori__()
 
         # Compute rho, requires up to date pos
         self.rho = get_grid_rho(self.pos)
@@ -41,7 +41,10 @@ class Robot:
         # Compute xi rho, requires up to date rho
         self.xi_rho = get_xi_rho(self.rho[0], self.rho[1])
 
-    def __compute_euler__(self):
+        # Compute p_rho_i, requires up to date rho
+        self.p_rho_i = self.__compute_p_rho_i__()
+
+    def __compute_euler_ori__(self):
         w, x, y, z = self.ori
 
         """
@@ -67,7 +70,7 @@ class Robot:
         roll_x_deg, pitch_y_deg, yaw_z_deg = [np.rad2deg(roll_x),np.rad2deg(pitch_y),np.rad2deg(yaw_z)]
         roll_x_ndeg, pitch_y_ndeg, yaw_z_ndeg = [roll_x_deg % 360,  pitch_y_deg % 360, yaw_z_deg % 360]
 
-        return np.array(roll_x), np.array(pitch_y), np.array(yaw_z) # in radians -pi to pi
+        return np.array([roll_x, pitch_y, yaw_z]) # in radians -pi to pi
                 
     def __compute_p_rho_i__(self):
         '''Compute p rho i, requires up to date rho'''
@@ -77,4 +80,4 @@ class Robot:
                          (actual_environment_y_min + (self.rho[1]+1)*normalized_y_steps)) /2
 
         # Center point (in positional meters) of the cell robot i is currently occupying
-        self.p_rho_i = [robot_p_rho_x, robot_p_rho_y, 0]
+        return [robot_p_rho_x, robot_p_rho_y, 0]

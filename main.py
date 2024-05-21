@@ -73,6 +73,8 @@
 from omni.isaac.examples.base_sample import BaseSample
 
 import numpy as np
+from omni.isaac.examples.user_examples.git_isaac_sim.directory import directory_setup
+directory_setup()
 
 import omni                                                     # Provides the core omniverse apis
 import asyncio                                                  # Used to run sample asynchronously to not block rendering thread
@@ -169,8 +171,9 @@ class Main(BaseSample):
         
     async def setup_post_load(self):
         self._world = self.get_world()
+        self.robots = [None for _ in range(num_robots)]
         for robot_index in range(num_robots):
-            self.robots[robot_index] = Robot(robot_index)
+            self.robots[robot_index] = Robot(self._world, robot_index)
             
         self._world.add_physics_callback("sending_actions", callback_fn=self.send_robot_actions)
         # Initialize our controller after load and the first reset
@@ -200,10 +203,10 @@ class Main(BaseSample):
 
         # Changing inital v_rho0_i from [0,0,0] to become get_robot_vel() initially. 
         # Afterwards these values are overwritten in calculate_v_rho0_i() as intented
-        for robvel in range(num_robots):
+        for robot_index in range(num_robots):
             # print("in loop")
-            if (np.allclose(robs_initial_v_rho0_i[robvel], [0,0,0],atol=1e-08)):
-                robs_initial_v_rho0_i[robvel] = self.get_robot_vel(robvel)
+            # (np.allclose(robs_initial_v_rho0_i[robot_index], [0,0,0],atol=1e-08)):
+            robs_initial_v_rho0_i[robot_index] = self.robots[robot_index].vel
         return
     
     def get_lidar(self, robot_index):
@@ -473,7 +476,7 @@ class Main(BaseSample):
         # If walls only then do calculations
         distance, angle = self.get_lidar(robot_index)
         curr_pos = self.robots[robot_index].pos
-        curr_ori = self.robots[robot_index].euler
+        curr_ori = self.robots[robot_index].euler_ori
 
         if coll_ind.size == 1: # Added to prevent error where sometimes coll_ind does exist but is a float instead of an array of size 1
             obstacle_pos.append( [ float(curr_pos[0] + distance[coll_ind]*np.cos(curr_ori[2] + angle[coll_ind])) , float(curr_pos[1] + distance[coll_ind]*np.sin(curr_ori[2] + angle[coll_ind])) , 0.0 ] )
@@ -486,9 +489,9 @@ class Main(BaseSample):
         if remove_redundant_obstacle_positions:
             show_log_remove_redundant_obstacle_positions = False
             robot_pos = []
-            for l in range(num_robots):
-                if l != robot_index:
-                    robot_pos.append(self.get_robot_pos(l))
+            for other_robot_index in range(num_robots):
+                if other_robot_index != robot_index:
+                    robot_pos.append(self.robots[other_robot_index].pos)
             if show_log_remove_redundant_obstacle_positions:
                 print(f"Rob: {robot_index} Obstacles:\n{np.array(obstacle_pos).round(decimals=2)}")
 
@@ -582,14 +585,14 @@ class Main(BaseSample):
                     log("interaction_velocity()", f"Only Neighbours, no Collision points")
                 length_sum = len(N)-1
                 for j in range(length_sum):
-                    p.append(self.get_robot_pos(N[j])) 
+                    p.append(self.robots[N[j]].pos) 
             else:                           # If both O and N, change length of sum, length_sum, and collision point positions, p.
                 if show_interaction_velocity:
                     log("interaction_velocity()", f"Neighbours AND Collision points found")
                 length_sum = len(N)+len(O)-1
                 for j in range(length_sum):
                     if j < len(N):
-                        p.append(self.get_robot_pos(N[j]))
+                        p.append(self.robots[N[j]].pos)
                     else:
                         p.append(O[j-len(N)])
 
@@ -601,7 +604,7 @@ class Main(BaseSample):
             # print(f"After: v_i: {v_i} | v_i.size: {v_i.size}")
             v_ = []
             for j in range(len(N)):
-                v_.append(self.get_robot_vel(N[j]))
+                v_.append(self.robots[N[j]].vel)
             v_ = np.array(v_)
             # print(f"Before: v_: {v_} | v_.size: {v_.size}")
             if v_.size <= 2:
@@ -708,8 +711,8 @@ class Main(BaseSample):
         center_j = (y_numcells - 1) // 2
 
         # Process each robot
-        for n in range(num_robots):
-            x_center, y_center, _ = self.get_robot_pos(n) # Center of each robot
+        for robot_index in range(num_robots):
+            x_center, y_center, _ = self.robots[robot_index].pos # Center of each robot
 
             # Calculate the indices of the grid that intersect the bounding box of the robot
             min_i = max(0, int((x_center - r_body) / x_cellsize + center_i))
@@ -812,7 +815,7 @@ class Main(BaseSample):
 
         for robot_index in range(num_robots): 
             v_x, v_y = self.velocity_commands(robot_index) 
-            curr_rot = self.robots[robot_index].euler
+            curr_rot = self.robots[robot_index].euler_ori
             
             angle_raw = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
             angle_raw = np.deg2rad(angle_raw)
@@ -854,9 +857,9 @@ class Main(BaseSample):
         #     kf = 0.02
         #     forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
         #     ka = 0.8
-        #     curr_rot = self.robots[robot_index].euler
+        #     curr_rot = self.robots[robot_index].euler_ori
             
-        #     performance_timestamp("robot ori euler")            
+        #     performance_timestamp("robot ori euler_ori")            
             
         #     ang = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
         #     ang = np.deg2rad(ang)
@@ -871,7 +874,7 @@ class Main(BaseSample):
      
         # for robot_index in range(num_robots):
         #     v_x, v_y, _ = self.interaction_velocity(robot_index)
-        #     curr_rot = self.robots[robot_index].euler
+        #     curr_rot = self.robots[robot_index].euler_ori
         #     kf = 0.02
         #     forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
         #     ang = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
@@ -894,9 +897,9 @@ class Main(BaseSample):
         #     kf = 0.02
         #     forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
         #     ka = 0.8
-        #     curr_rot = self.robots[robot_index].euler
+        #     curr_rot = self.robots[robot_index].euler_ori
             
-        #     performance_timestamp("robot ori euler")
+        #     performance_timestamp("robot ori euler_ori")
             
         #     # a = targetA - sourceA
         #     # Version 1:

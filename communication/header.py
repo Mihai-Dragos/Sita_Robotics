@@ -34,7 +34,8 @@ class Header():
         header += len(message_data).to_bytes(4, byteorder="big", signed=False)
 
         debug_log(f"Header v{Header.version}", "Created header data:")
-        debug_log("", f"[{header.hex("|")}]")
+        header_data = header.hex("|")
+        debug_log("", f"[{header_data}]")
         return header
     
     def get_size() -> int:

@@ -29,8 +29,8 @@ def create_cube(world, path:str, name:str, id:int, position:np.ndarray, size:np.
 
 wall_index = 0
 def add_wall(world, position:np.ndarray, size:np.ndarray, color:np.ndarray):
-    create_cube(world, "Walls", "Cube", wall_index, position, size, color)
     global wall_index
+    create_cube(world, "Walls", "Cube", wall_index, position, size, color)
     wall_index += 1
 
 SITUATION_NAME = "test"
