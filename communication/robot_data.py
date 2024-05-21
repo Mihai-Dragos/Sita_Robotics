@@ -15,9 +15,9 @@ class RobotData():
         }
         roll, pitch, yaw = robot.ori
         self.rotation = {
-            'x':pitch,
-            'y':yaw,
-            'z':roll
+            'pitch':pitch,
+            'yaw':yaw,
+            'roll':roll
         }
 
 import numpy as np
