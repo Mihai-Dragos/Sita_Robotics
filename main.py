@@ -240,6 +240,7 @@ class Main(BaseSample):
             log("individual weighted", f"Ent:{np.round(v[0], decimals=2)} | Exp:{np.round(v[1], decimals=2)} | Int:{np.round(v[2], decimals=2)}", True)
 
         if show_vel_spheres:
+            # performance_timestamp("")
             entering_mag = np.linalg.norm(v[0])
             exploration_mag = np.linalg.norm(v[1])
             interaction_mag = np.linalg.norm(v[2])
@@ -249,15 +250,12 @@ class Main(BaseSample):
             entering_color = Gf.Vec3f((entering_mag/total_mag), 0.0, 0.0)
             exploration_color = Gf.Vec3f(0.0, (exploration_mag/total_mag), 0.0)
             interaction_color = Gf.Vec3f(0.0, 0.0, (interaction_mag/total_mag))
-            vel_colors = []
-            vel_colors.append(entering_color)
-            vel_colors.append(exploration_color)
-            vel_colors.append(interaction_color)
+            vel_colors = [entering_color, exploration_color, interaction_color]
             if show_log_velocity_commands:
                 log("induvidual color %", f"Ent (R): {np.round(vel_colors[0][0]*50, decimals=2)}% | Exp (G): {np.round(vel_colors[1][1]*50, decimals=2)}% | Int (B): {np.round(vel_colors[2][2]*50, decimals=2)}%", True)
             
             stage = omni.usd.get_context().get_stage()
-
+            
             # # Method 0 - Not caching sphereprims or materials and reusing same variables for each one
             # for vel in range(3):
             #     mtl_prim = stage.GetPrimAtPath(mtl_created_list[robot_index*3 + vel])
@@ -276,7 +274,7 @@ class Main(BaseSample):
                 spheres_prim[robot_index][vel] = stage.GetPrimAtPath(path)
                 spheres_mat[robot_index][vel] = UsdShade.Material(mtl_prim[robot_index][vel])
                 UsdShade.MaterialBindingAPI(spheres_prim[robot_index][vel]).Bind(spheres_mat[robot_index][vel], UsdShade.Tokens.strongerThanDescendants)
-            
+            # performance_timestamp("Set colors")
             # # Method 2 - [Made for Troubleshooting] Same as Method 1 but creating and applying are done seperately instead of together
             # for vel in range(3):
             #     mtl_prim[robot_index][vel] = stage.GetPrimAtPath(f"/Looks/OmniPBR_{robot_index:02}_{vel:01}") #mtl_created_list[robot_index*3 + vel]
@@ -421,29 +419,29 @@ class Main(BaseSample):
     def find_collision_points_index(self, robot_index):
         distance, angle = self.get_lidar(robot_index)
         wall_indices = []
-
-        # Copy relevant indicies into wall_indices 
+        end_wall_index = []
+        current_end_of_wall_index = -1
+        
+        # Copy relevant indicies into wall_indices and store end wall indicies
         for i in range(len(distance)):
             if distance[i] < r_check:
-                wall_indices.append(i)  
+                wall_indices.append(i)
+                current_end_of_wall_index = i
+            elif current_end_of_wall_index != -1:
+                end_wall_index.append(current_end_of_wall_index)
+                current_end_of_wall_index = -1
+        
+        if (distance[0] >= r_check and current_end_of_wall_index != -1):
+            end_wall_index.append(current_end_of_wall_index)
         
         if len(wall_indices) <= 0:          # If no walls, no calculations needed return empty list, wall_indices = [] 
             log("find_collision_points_index()", f"No collision index found, wall_indicies: {wall_indices} output set to []:{np.array([])}")
             return np.array([])
         else:                               # If walls, do calculations
-            end_wall_index = []
+            
             collision_points_index = []
 
-            # Check if next angle is sequential angle. 
-            #   If not sequential then it's a gap in sensing, therefore 2 different walls. 
-            #       Add the indicies of end of walls into end_wall_index
-            expected_angle_difference = 0.00699
-            for i in range(len(wall_indices)-1):
-                if (angle[wall_indices[i+1]] - angle[wall_indices[i]] > expected_angle_difference):
-                    end_wall_index.append(wall_indices[i]) 
-            # print("end_wall_index",end_wall_index)  
-
-
+            
             # Find closest point of walls
             if len(end_wall_index) > 0:
                 # Find closest point on every wall
@@ -456,10 +454,11 @@ class Main(BaseSample):
                         # Find the index of the minimum distance to robot from of all wall_indices of following walls + the index shift and add it to collision_points_index
                         collision_points_index.append(np.argmin(np.array(distance[end_wall_index[i-1]+1:end_wall_index[i]])) + end_wall_index[i-1]+1) 
             # Find closest point of the 1 (one) wall
-            else:
+            elif len(wall_indices) > 0:
                 # Find the index of the minimum distance to robot from of all wall_indices of the wall
-                collision_points_index = wall_indices[np.argmin(np.array(distance[wall_indices[0]:wall_indices[-1]]))] # -1 is last index
-                
+                collision_points_index.append(wall_indices[np.argmin(np.array(distance[wall_indices[0]:wall_indices[-1]]))]) # -1 is last index
+            
+            
             # print("collision_points_index", collision_points_index) 
             return np.array(collision_points_index)
         
@@ -484,7 +483,7 @@ class Main(BaseSample):
             for i in range(coll_ind.size): # Should work same as for i in range(len(coll_ind)):
                 obstacle_pos.append( [ float(curr_pos[0] + distance[coll_ind[i]]*np.cos(curr_ori[2] + angle[coll_ind[i]])) , float(curr_pos[1] + distance[coll_ind[i]]*np.sin(curr_ori[2] + angle[coll_ind[i]])) , 0.0 ] )
                 
-
+        # performance_timestamp("")
         # Modifier toggled in settings.py
         if remove_redundant_obstacle_positions:
             show_log_remove_redundant_obstacle_positions = False
@@ -494,24 +493,25 @@ class Main(BaseSample):
                     robot_pos.append(self.robots[other_robot_index].pos)
             if show_log_remove_redundant_obstacle_positions:
                 print(f"Rob: {robot_index} Obstacles:\n{np.array(obstacle_pos).round(decimals=2)}")
-
+            # performance_timestamp("get robot positions")
             # Hardcode
             safety_distance = 0.05
             indicies_to_delete = [] 
-            for k in range(len(obstacle_pos)):
-                for m in range(len(robot_pos)):
-                    dist = np.linalg.norm(np.subtract(robot_pos[m], obstacle_pos[k]))
+            for obstacle_index in range(len(obstacle_pos)):
+                for other_robot_index in range(len(robot_pos)):
+                    dist = np.linalg.norm(np.subtract(robot_pos[other_robot_index], obstacle_pos[obstacle_index]))
                     if  dist < (np.sqrt(2))*r_body + safety_distance:
                         if show_log_remove_redundant_obstacle_positions:
-                            print(f"Redundant position: {np.round(obstacle_pos[k],decimals=2)}, index: {k}. Too close to robot position: {np.round(robot_pos[m],decimals=2)}, distance: {np.round(dist,decimals=2)}m")
-                        indicies_to_delete.append(k)
+                            print(f"Redundant position: {np.round(obstacle_pos[obstacle_index],decimals=2)}, index: {obstacle_index}. Too close to robot position: {np.round(robot_pos[other_robot_index],decimals=2)}, distance: {np.round(dist,decimals=2)}m")
+                        indicies_to_delete.append(obstacle_index)
+            # performance_timestamp("check obstacle position at robots")
             # print(f"indicies_to_delete: {indicies_to_delete}")
             if np.array(indicies_to_delete).size > 0:               # Only attempt to delete if indicies_to_delete not empty list
-                for n in range(len(indicies_to_delete)-1, -1, -1):  # Have to go in reverse order to ensure correct values deleted
-                    del obstacle_pos[indicies_to_delete[n]]
+                for obstacle_index in range(len(indicies_to_delete)-1, -1, -1):  # Have to go in reverse order to ensure correct values deleted
+                    del obstacle_pos[indicies_to_delete[obstacle_index]]
                 if show_log_remove_redundant_obstacle_positions:
                     print(f"Redundant position(s) {indicies_to_delete} deleted, updated Rob {robot_index} Obstacles:\n{np.array(obstacle_pos).round(decimals=2)}")
-
+            # performance_timestamp("delete obstacle positions at robot")
         # Visualisation 
         if show_robot_obstacle_positions:
 
@@ -519,8 +519,8 @@ class Main(BaseSample):
             base_obs_sphere_prim_path = f"/World/Obstacles/Obstacles_"
             base_obs_sphere_name = f"Obstacle"
             
-
-            remove_unnessesary_obs_spheres = False       # True: 4.5 fps False: 11-12 fps
+            
+            remove_unnessesary_obs_spheres = True       # True: 4.5 fps False: 11-12 fps
             if remove_unnessesary_obs_spheres:
                 global highest_obs_index
                 print(f"highest_obs_index[robot_index]: {highest_obs_index[robot_index]}")
@@ -529,7 +529,7 @@ class Main(BaseSample):
                     if highest_obs_index[robot_index] > 0:
                         highest_obs_index[robot_index] -= 1
                         print(f"Updated lower highest_obs_index | Rob: {robot_index}, Highest index: {highest_obs_index[robot_index]}")
-
+            # performance_timestamp("remove_unnessesary_obs_spheres")
             colors = []
             colors.append([1.0, 0.0, 0.0])      # Robot 0
             colors.append([0.0, 1.0, 0.0])      # Robot 1
@@ -548,14 +548,15 @@ class Main(BaseSample):
                         ))
                 obs_counter += 1
                 print(f"obs_counter: {obs_counter}")
+                # performance_timestamp("create spheres")
                 if remove_unnessesary_obs_spheres:
                     if j > highest_obs_index[robot_index]:
                         highest_obs_index[robot_index] = j
                         print(f"Updated higher highest_obs_index | Rob: {robot_index}, Highest index: {highest_obs_index[robot_index]}")
-
+                # performance_timestamp("update highest obs index")
         if show_log_find_collision_points:
             log("find_collision_points()", f"Obstacles:\n{np.array(obstacle_pos).round(decimals=2)}")
-
+        # performance_timestamp("End of f_c_p")
         return np.array(obstacle_pos)
 
     def interaction_velocity(self, robot_index):
@@ -707,30 +708,30 @@ class Main(BaseSample):
         y_cellsize = normalized_y_steps
 
         # Center cell coordinates
-        center_i = (x_numcells - 1) // 2 
-        center_j = (y_numcells - 1) // 2
+        center_cell_x = (x_numcells - 1) // 2 
+        center_cell_y = (y_numcells - 1) // 2
 
         # Process each robot
         for robot_index in range(num_robots):
-            x_center, y_center, _ = self.robots[robot_index].pos # Center of each robot
+            robot_center_x, robot_center_y, _ = self.robots[robot_index].pos # Center of each robot
 
             # Calculate the indices of the grid that intersect the bounding box of the robot
-            min_i = max(0, int((x_center - r_body) / x_cellsize + center_i))
-            max_i = min(x_numcells - 1, int((x_center + r_body) / x_cellsize + center_i))
-            min_j = max(0, int((y_center - r_body) / y_cellsize + center_j))
-            max_j = min(y_numcells - 1, int((y_center + r_body) / y_cellsize + center_j))
+            min_x = max(0, int((robot_center_x - r_body) / x_cellsize + center_cell_x))
+            max_x = min(x_numcells - 1, int((robot_center_x + r_body) / x_cellsize + center_cell_x))
+            min_y = max(0, int((robot_center_y - r_body) / y_cellsize + center_cell_y))
+            max_y = min(y_numcells - 1, int((robot_center_y + r_body) / y_cellsize + center_cell_y))
 
             # Iterate over the cells within the bounding box
-            for i in range(min_i, max_i + 1):
-                for j in range(min_j, max_j + 1):
+            for x in range(min_x, max_x + 1):
+                for y in range(min_y, max_y + 1):
                     # Calculate the real-world (x, y) coordinates of the center of each cell
-                    cell_x_center = (i - center_i) * x_cellsize
-                    cell_y_center = (j - center_j) * y_cellsize
+                    cell_x_center = (x - center_cell_x) * x_cellsize
+                    cell_y_center = (y - center_cell_y) * y_cellsize
 
                     # Check if any part of the robot covers the center of the cell. Factor sqrt(2) added to cover edge cases if robot perfectly between 4 cells
                     # Paper wants to count occupied if cell_center within r_avoid/2 of any robot. If want cells occupied by body: np.sqrt(2)*r_body
-                    if np.sqrt((cell_x_center - x_center) ** 2 + (cell_y_center - y_center) ** 2) <= r_avoid/2: 
-                        occupied.add((i, j))
+                    if np.sqrt((cell_x_center - robot_center_x) ** 2 + (cell_y_center - robot_center_y) ** 2) <= r_avoid/2: 
+                        occupied.add((x, y))
 
         log("occupied_cells()", f"Occupied cells:\n {list(occupied)}\n")
         return list(occupied)
@@ -824,7 +825,7 @@ class Main(BaseSample):
             angle_threshold = 90 # degrees
             angle_rotation_only_gain_multiplier = 1.5
             if np.abs(angle_raw) > np.deg2rad(angle_threshold):
-                print(f"Rob: {robot_index} angle too large: {np.rad2deg(angle_raw).round(decimals=2)} degrees. Spinning faster and set forward velocity to 0")
+                #print(f"Rob: {robot_index} angle too large: {np.rad2deg(angle_raw).round(decimals=2)} degrees. Spinning faster and set forward velocity to 0")
                 angle = angle_rotation_only_gain_multiplier * angle_gain * (angle_raw)
                 forward_raw = 0
                 forward = 0

@@ -15,7 +15,7 @@ def log(context:str, message:str, shifted:bool=False):
     if (shifted): print(f"{spacing}{context} | {message}\n", end="")
     else: print(f"{context}{spacing} | {message}\n", end="")
 
-DEBUG_LOG = False
+DEBUG_LOG = True
 
 def debug_log(context:str, message:str, shifted:bool=False):
     if DEBUG_LOG: log(context, message, shifted)
