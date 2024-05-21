@@ -20,7 +20,7 @@ class Header():
                     f" does not match this header version {Header.version}")
             return
         
-        self.message_size = int.from_bytes(header_data[1:5])
+        self.message_size = int.from_bytes(header_data[1:5], 'big')
         debug_log(f"Header v{Header.version}", f"Header received message size {self.message_size}")
 
     def create(message_data:bytes) -> bytes:
