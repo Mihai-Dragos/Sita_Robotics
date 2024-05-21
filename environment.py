@@ -16,6 +16,45 @@ from grid import normalized_x_steps, normalized_y_steps
 from grid import number_of_rows, number_of_columns
 import util
 
+def create_cube(world, path:str, name:str, id:int, position:np.ndarray, size:np.ndarray, color:np.ndarray):
+    world.scene.add(
+        FixedCuboid(
+            prim_path=f"/World/{path}/{name}{id:02}",
+            name=f"{name.lower()}{id:02}",
+            translation=position,
+            scale=np.array([3, 0.1, 0.5]),  
+            color=color,
+        )
+    )
+
+wall_index = 0
+def add_wall(world, position:np.ndarray, size:np.ndarray, color:np.ndarray):
+    create_cube(world, "Walls", "Cube", wall_index, position, size, color)
+    global wall_index
+    wall_index += 1
+
+SITUATION_NAME = "test"
+SITUATIONS_PATH = "situations/"
+def load_situation():
+    file_address = f"{SITUATIONS_PATH}{SITUATION_NAME}.json"
+    if not os.path.isfile(file_address):
+        util.debug_log("Situation", f"Could not load situation from file address {file_address}")
+        return
+    
+    with open(file_address, 'r') as file:
+        situation = (list)(json.load(file))
+    
+    return situation
+
+def create_situation_walls(world, walls_color:np.ndarray):
+    situation = load_situation()
+    for situationJSON in situation:
+        if (situationJSON['type'] != "wall"): continue
+        position = situationJSON['position']
+        position = np.array([position['x'], position['y'], position['z']])
+        scale = situationJSON['scale']
+        scale = np.array([scale['x'], scale['y'], scale['z']])
+        add_wall(world, position, scale, walls_color)
 
 def create_walls(world, walls_color):
     Cube_00 = world.scene.add(
@@ -269,6 +308,7 @@ def setup_environment(world):
         # walls_visual_material = 
         # walls_physics_material = 
         create_walls(world, walls_color)    # Create Walls
+        # create_situation_walls(wold, walls_color) # Create walls from situation data
     if show_grid_vis:
         create_grid_vis(world)          # Create Grid Visualisation
     if show_victim_cube:
