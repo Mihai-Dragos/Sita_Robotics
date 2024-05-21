@@ -26,8 +26,7 @@ class Channel():
         return not self.connection._reading and not self.connection._writing
 
 def send_robot_data(robot:Robot):
-    # data = RobotData(robot)
-    data = RobotData(RandomRobot())
+    data = RobotData(robot)
     message = json.dumps(data.__dict__)
     channel.send_message(message)
 
@@ -44,7 +43,7 @@ while True:
         channel.close()
         break
     if (input_string == "robot"): 
-        send_robot_data()
+        send_robot_data(RandomRobot())
         continue
     channel.send_message(input_string)
 
