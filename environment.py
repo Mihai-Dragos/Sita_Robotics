@@ -7,11 +7,15 @@ from omni.isaac.sensor import Camera
 import omni.isaac.core.utils.numpy.rotations as rot_utils
 
 import numpy as np
+import json
+import os
 
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import actual_environment_size_x, actual_environment_size_y, actual_environment_x_min, actual_environment_x_max, actual_environment_y_min, actual_environment_y_max
-from omni.isaac.examples.user_examples.git_isaac_sim.settings import show_walls, show_door, show_grid_vis, show_victim_cube, show_test_wall
-from omni.isaac.examples.user_examples.git_isaac_sim.grid import normalized_x_steps, normalized_y_steps
-from omni.isaac.examples.user_examples.git_isaac_sim.grid import number_of_rows, number_of_columns
+from settings import actual_environment_size_x, actual_environment_size_y, actual_environment_x_min, actual_environment_x_max, actual_environment_y_min, actual_environment_y_max
+from settings import show_walls, show_door, show_grid_vis, show_victim_cube, show_test_wall
+from grid import normalized_x_steps, normalized_y_steps
+from grid import number_of_rows, number_of_columns
+import util
+
 
 def create_walls(world, walls_color):
     Cube_00 = world.scene.add(
