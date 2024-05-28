@@ -83,26 +83,26 @@ actual_environment_size_y = actual_environment_y_max - actual_environment_y_min
 
 ##### Situation Parameters #####
 
-SITUATION_NAME = "wall"
+SITUATION_NAME = "three_rooms"
 SITUATIONS_PATH = "situations/"
 
 ################################
 
 ##### Timeline Parameters #####
 
-SAVE_TIMELINE = False
-SEND_TIMELINE = True
+SAVE_TIMELINE = True
+SEND_TIMELINE = False
 
 TIMELINE_PATH = "timelines/"
 
-LIMIT_TIMELINE_RATE = True
+LIMIT_TIMELINE_RATE = False
 TIMELINE_RATE = 1 / 8 # Minimum time between saves in seconds.
 
 ################################
 
 ##### Communicator Parameters #####
 
-CREATE_CONNECTION = True
+CREATE_CONNECTION = False
 
 ################################
 
