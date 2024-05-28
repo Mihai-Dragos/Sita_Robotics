@@ -88,6 +88,24 @@ SITUATIONS_PATH = "situations/"
 
 ################################
 
+##### Timeline Parameters #####
+
+SAVE_TIMELINE = False
+SEND_TIMELINE = True
+
+TIMELINE_PATH = "timelines/"
+
+LIMIT_TIMELINE_RATE = True
+TIMELINE_RATE = 1 / 8 # Minimum time between saves in seconds.
+
+################################
+
+##### Communicator Parameters #####
+
+CREATE_CONNECTION = True
+
+################################
+
 ##### Utility Parameters #####
 LOG_CONTEXT_SPACE = 29
 MEASURE_PERFORMANCE = True
