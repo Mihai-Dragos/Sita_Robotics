@@ -84,7 +84,7 @@ actual_environment_size_y = actual_environment_y_max - actual_environment_y_min
 ##### Situation Parameters #####
 
 SITUATION_NAME = "three_rooms"
-SITUATIONS_PATH = "situations/"
+SITUATIONS_PATH = "situations"
 
 ################################
 
@@ -93,7 +93,7 @@ SITUATIONS_PATH = "situations/"
 SAVE_TIMELINE = True
 SEND_TIMELINE = False
 
-TIMELINE_PATH = "timelines/"
+TIMELINE_PATH = "timelines"
 
 LIMIT_TIMELINE_RATE = False
 TIMELINE_RATE = 1 / 8 # Minimum time between saves in seconds.
