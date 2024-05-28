@@ -10,6 +10,7 @@ import numpy as np
 import json
 import os
 
+from settings import SITUATION_NAME, SITUATIONS_PATH
 from settings import actual_environment_size_x, actual_environment_size_y, actual_environment_x_min, actual_environment_x_max, actual_environment_y_min, actual_environment_y_max
 from settings import show_walls, show_door, show_grid_vis, show_victim_cube, show_test_wall
 from grid import normalized_x_steps, normalized_y_steps
@@ -33,8 +34,6 @@ def add_wall(world, position:np.ndarray, scale:np.ndarray, color:np.ndarray):
     create_cube(world, "Walls", "Cube", wall_index, position, scale, color)
     wall_index += 1
 
-SITUATION_NAME = "wall"
-SITUATIONS_PATH = "situations/"
 def load_situation():
     file_address = f"{os.path.dirname(__file__)}/{SITUATIONS_PATH}{SITUATION_NAME}.json"
     if not os.path.isfile(file_address):

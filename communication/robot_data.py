@@ -1,5 +1,6 @@
 from robot import Robot
-import json
+import numpy as np
+import random
 
 class RobotData():
     serialNumber:str
@@ -20,8 +21,6 @@ class RobotData():
             'roll':roll
         }
 
-import numpy as np
-import random
 
 class RandomRobot(Robot):
     index:int
@@ -30,5 +29,5 @@ class RandomRobot(Robot):
 
     def __init__(self):
         self.index = random.randint(0, 2)
-        self.pos = np.array([np.float(random.random() * 4), np.float(random.random() * 4), np.float(0.45)])
-        self.ori = np.array([np.float(0), np.float(0), np.float(random.random() * 2 * np.pi - np.pi)])
+        self.pos = np.array([float(random.random() * 5) - 2.3, float(random.random() * 3.5) -1.1, float(0.1)])
+        self.euler_ori = np.array([float(0), float(0), float(random.random() * 2 * np.pi - np.pi)])

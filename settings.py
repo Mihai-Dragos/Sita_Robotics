@@ -81,6 +81,13 @@ actual_environment_size_x = actual_environment_x_max - actual_environment_x_min
 actual_environment_size_y = actual_environment_y_max - actual_environment_y_min
 ##################################
 
+##### Situation Parameters #####
+
+SITUATION_NAME = "wall"
+SITUATIONS_PATH = "situations/"
+
+################################
+
 ##### Utility Parameters #####
 LOG_CONTEXT_SPACE = 29
 MEASURE_PERFORMANCE = True

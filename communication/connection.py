@@ -1,7 +1,7 @@
 from util import log, debug_log
 from communication.message import Message
 
-from socket import socket, SHUT_RD, SHUT_WR, SHUT_RDWR
+from socket import socket, SHUT_RD, SHUT_WR
 from queue import Queue 
 from threading import Thread
 import time
@@ -11,7 +11,7 @@ class Connection():
 
     def __init__(self, connected_socket:socket, auto_start:bool=True):
         '''Create a connected with a connected socket.'''
-        log("Connection", f"Initializing connection for " +
+        log("Connection", "Initializing connection for " +
             f"connected socket {connected_socket.getsockname()}")
         self.socket = connected_socket
         self._writing = True
@@ -38,7 +38,7 @@ class Connection():
     def start(self):
         '''Start the connection to begin reading and writing data'''
         if not self._started:
-            debug_log("Connection", f"Starting receiver and sender thread")
+            debug_log("Connection", "Starting receiver and sender thread")
             self.receiver.start()
             self.sender.start()
             self._started = True
@@ -67,11 +67,11 @@ class Connection():
         log("Connection", f"Closing the TCP connection with socket {self.socket.getsockname()}")
         
         self.__stop_writing__()
-        debug_log("Connection", f"Waiting for sender thread to join")
+        debug_log("Connection", "Waiting for sender thread to join")
         self.sender.join()
         
-        debug_log("Connection", f"Waiting for reading to stop " +
-                                 f"from EOF signal or 4 second timeout")
+        debug_log("Connection", "Waiting for reading to stop " +
+                                 "from EOF signal or 4 second timeout")
         self.socket.settimeout(4)
         while(self._reading):
             time.sleep(0.1)
@@ -86,7 +86,7 @@ class Connection():
 
     def send_message(self, data:bytes):
         '''Add a message to the connection to send'''
-        debug_log("Connection", f"Adding message to the queue:")
+        debug_log("Connection", "Adding message to the queue:")
         debug_log("", f"\'{data}\'")
         self._data_to_send.put(data)
 
@@ -99,11 +99,11 @@ class Connection():
 
     def __receiver__(self):
         '''Program to run on a thread, which continously receives messages from the connection'''
-        debug_log("Receiver", f"Start of receiver thread")
+        debug_log("Receiver", "Start of receiver thread")
 
         while self._reading:
             received_data = self.__receive__()
-            debug_log("Receiver", f"Received message from the connection")
+            debug_log("Receiver", "Received message from the connection")
         
             if (not received_data): 
                 continue
@@ -111,15 +111,15 @@ class Connection():
             for listener in self._receive_listeners:
                 listener(received_data)
 
-        debug_log("Receiver", f"Reached end of receiver thread")
+        debug_log("Receiver", "Reached end of receiver thread")
 
     def __sender__(self):
         '''Program to run on a thread, which writes all messages to the connection'''
-        debug_log("Sender", f"Start of sender thread")
+        debug_log("Sender", "Start of sender thread")
 
         while True:
             message = self._data_to_send.get()
-            debug_log("Sender", f"Got new data to send from queue")
+            debug_log("Sender", "Got new data to send from queue")
 
             if (not self._writing): 
                 break # End sender thread as we should stop writing 
@@ -128,19 +128,19 @@ class Connection():
             log("", f"{message}")
             self.__send__(message)
         
-        debug_log("Sender", f"Reached end of sender thread")
+        debug_log("Sender", "Reached end of sender thread")
 
     def __receive__(self) -> bytes:
         '''Wait to receive a message from the socket connection'''
         try:
-            debug_log("Connection", f"Waiting to receive message")
+            debug_log("Connection", "Waiting to receive message")
             return Message.receive(self.socket)
         except TimeoutError:
-            debug_log("Connection", f"TimeOutError trying to receive message " +
+            debug_log("Connection", "TimeOutError trying to receive message " +
                       f"at socket {self.socket.getsockname()}")
             self.__stop_reading__()
         except Exception as exception:
-            debug_log("Connection", f"Exception occurred trying to receive message " +
+            debug_log("Connection", "Exception occurred trying to receive message " +
                       f"at socket {self.socket.getsockname()}")
             debug_log("Exception", f"{exception}", True)
             self.__stop_reading__()
@@ -148,14 +148,14 @@ class Connection():
     def __send__(self, data:bytes):
         '''Send a message to the socket connection'''
         try:
-            debug_log("Connection", f"Sending message")
+            debug_log("Connection", "Sending message")
             Message(data).send(self.socket)
         except TimeoutError:
-            debug_log("Connection", f"TimeOutError trying to send message " +
+            debug_log("Connection", "TimeOutError trying to send message " +
                       f"at socket {self.socket.getsockname()}")
             self.__stop_writing__()
         except Exception as exception:
-            debug_log("Connection", f"Exception occurred trying to send message " +
+            debug_log("Connection", "Exception occurred trying to send message " +
                       f"at socket {self.socket.getsockname()}")
             debug_log("Exception", f"{exception}", True)
             self.__stop_writing__()

@@ -12,13 +12,21 @@ def log(context:str, message:str, shifted:bool=False):
     if (len(context) < LOG_CONTEXT_SPACE):
         for _ in range(LOG_CONTEXT_SPACE - len(context)):
             spacing += " "
-    if (shifted): print(f"{spacing}{context} | {message}\n", end="")
-    else: print(f"{context}{spacing} | {message}\n", end="")
+    if (shifted): 
+        print(f"{spacing}{context} | {message}\n", end="")
+    else: 
+        print(f"{context}{spacing} | {message}\n", end="")
 
 DEBUG_LOG = True
 
+debug_contexts = set()
+
+def add_debug_context(context:str):
+    debug_contexts.add(context)
+
 def debug_log(context:str, message:str, shifted:bool=False):
-    if DEBUG_LOG: log(context, message, shifted)
+    if DEBUG_LOG or context in debug_contexts: 
+        log(context, message, shifted)
 
 
 total_performance = dict()

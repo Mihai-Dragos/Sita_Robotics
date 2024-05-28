@@ -1,7 +1,8 @@
-from util import log, debug_log
+from util import log, debug_log, add_debug_context
 from communication.robot_data import RobotData, RandomRobot
-from communication.TCP_client import *
+from communication.TCP_client import create_tcp_connection
 from robot import Robot
+import time
 
 import json
 
@@ -11,12 +12,12 @@ class Channel():
         self.connection.add_receive_listener(Channel.on_receive_message)
 
     def send_message(self, message:str):
-        log("Channel", f"Sending message:")
+        log("Channel", "Sending message:")
         log("", f"{message}")
         self.connection.send_message(message.encode("utf-8"))
 
     def on_receive_message(data:bytes):
-        log("Channel", f"Received message")
+        log("Channel", "Received message")
         message = data.decode("utf-8")
         log("", f"\'{message}\'")
 
@@ -30,22 +31,24 @@ channel = None
 
 try:
     channel = Channel()
-except:
-    debug_log("TCP Client", f"Exception occurred")
+except (Exception):
+    debug_log("TCP Client", "Exception occurred")
 
 def send_robot_data(robot:Robot):
     data = RobotData(robot)
     message = json.dumps(data.__dict__)
-    if channel: channel.send_message(message)
+
+    if channel: 
+        channel.send_message(message)
 
 if (__name__ == "__main__"):
     while True:
         time.sleep(0.1)
-        log("TCP Client", f"Waiting for message or type 'stop' to end connection:")
+        log("TCP Client", "Waiting for message or type 'stop' to end connection:")
         input_string = input()
         if (input_string == "stop"): break
         if (input_string == "debug"): 
-            DEBUG_LOG = not DEBUG_LOG
+            add_debug_context("TCP Client")
             continue
         if (channel.is_finished()):
             channel.close()
@@ -55,5 +58,5 @@ if (__name__ == "__main__"):
             continue
         channel.send_message(input_string)
 
-    debug_log("TCP Client", f"Closing connection")
+    debug_log("TCP Client", "Closing connection")
     channel.close()

@@ -1,4 +1,4 @@
-from util import log, debug_log
+from util import debug_log
 from communication.header import Header
 
 from socket import socket
@@ -12,24 +12,26 @@ class Message():
 
     def send(self, socket:socket):
         '''Send the created message to the specified socket'''
-        debug_log("Message", f"Sending message header")
+        debug_log("Message", "Sending message header")
         socket.send(Header.create(self.data))
 
-        debug_log("Message", f"Sending message data")
+        debug_log("Message", "Sending message data")
         socket.send(self.data)
 
     def receive(socket:socket) -> bytes:
         '''Wait to receive a message from the specified socket'''
         header_data = Message.receive_sized_message(socket, Header.get_size())
 
-        if (not header_data): return
+        if (not header_data): 
+            return
 
-        debug_log("Message", f"Received message header")
+        debug_log("Message", "Received message header")
         message_data = Message.receive_sized_message(socket, Header(header_data).message_size)
 
-        if (not message_data): return
+        if (not message_data): 
+            return
 
-        debug_log("Message", f"Received message data")
+        debug_log("Message", "Received message data")
         return message_data
     
     def receive_sized_message(socket:socket, size:int) -> bytes:
@@ -42,7 +44,7 @@ class Message():
 
             # Check if data was received
             if not data:
-                debug_log("Message", f"Received End Of File signal")
+                debug_log("Message", "Received End Of File signal")
                 # No data received is End Of File signal, so we alert listeners
                 Message.end_of_file_handler(socket)
                 return
@@ -57,12 +59,12 @@ class Message():
 
     def add_end_of_file_listener(listener:Callable[[socket], None]):
         '''Add a listener to the End Of File signal'''
-        debug_log("Message", f"Adding End Of File listener")
+        debug_log("Message", "Adding End Of File listener")
         Message.__end_of_file_listeners__.append(listener)
 
     def remove_end_of_file_listener(listener:Callable[[socket], None]):
         '''Remove a listener for the End Of File signal'''
-        debug_log("Message", f"Removing End Of File listener")
+        debug_log("Message", "Removing End Of File listener")
         Message.__end_of_file_listeners__.remove(listener)
 
     def end_of_file_handler(socket:socket):
