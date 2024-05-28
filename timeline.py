@@ -12,7 +12,7 @@ import os
 last_save = time.time()
 
 def get_timeline_file_address():
-    file_address = f"{os.path.dirname(__file__)}{TIMELINE_PATH}/{SITUATION_NAME}.json"
+    file_address = f"{os.path.dirname(__file__)}/{TIMELINE_PATH}/{SITUATION_NAME}.json"
     return file_address
 
 def save_robot_data(robotdata:RobotData):

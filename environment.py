@@ -35,7 +35,7 @@ def add_wall(world, position:np.ndarray, scale:np.ndarray, color:np.ndarray):
     wall_index += 1
 
 def load_situation():
-    file_address = f"{os.path.dirname(__file__)}{SITUATIONS_PATH}/{SITUATION_NAME}.json"
+    file_address = f"{os.path.dirname(__file__)}/{SITUATIONS_PATH}/{SITUATION_NAME}.json"
     if not os.path.isfile(file_address):
         util.debug_log("Situation", f"Could not load situation from file address {file_address}")
         return
