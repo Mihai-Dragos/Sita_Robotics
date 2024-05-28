@@ -824,16 +824,16 @@ class Main(BaseSample):
             # print(f"Rob: {robot_index} Angle: {np.rad2deg(angle_raw).round(decimals=2)}")
             angle_threshold = 90 # degrees
             angle_rotation_only_gain_multiplier = 1.5
-            if np.abs(angle_raw) > np.deg2rad(angle_threshold):
-                #print(f"Rob: {robot_index} angle too large: {np.rad2deg(angle_raw).round(decimals=2)} degrees. Spinning faster and set forward velocity to 0")
-                angle = angle_rotation_only_gain_multiplier * angle_gain * (angle_raw)
-                forward_raw = 0
-                forward = 0
+            # if np.abs(angle_raw) > np.deg2rad(angle_threshold):
+            #     #print(f"Rob: {robot_index} angle too large: {np.rad2deg(angle_raw).round(decimals=2)} degrees. Spinning faster and set forward velocity to 0")
+            #     angle = angle_rotation_only_gain_multiplier * angle_gain * (angle_raw)
+            #     forward_raw = 0
+            #     forward = 0
                 
-            else:
-                angle = angle_gain * (angle_raw)
-                forward_raw = (((v_x ** 2) + (v_y ** 2)) ** 0.5)
-                forward = forward_gain * forward_raw
+            # else:
+            angle = angle_gain * (angle_raw)
+            forward_raw = (((v_x ** 2) + (v_y ** 2)) ** 0.5)
+            forward = forward_gain * forward_raw
 
             self.robots[robot_index].instance.apply_action(self._Vel_controller.forward(command=[forward, angle]))
             if show_log_send_robot_actions:

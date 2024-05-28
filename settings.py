@@ -95,7 +95,7 @@ SEND_TIMELINE = False
 
 TIMELINE_PATH = "timelines"
 
-LIMIT_TIMELINE_RATE = False
+LIMIT_TIMELINE_RATE = True
 TIMELINE_RATE = 1 / 8 # Minimum time between saves in seconds.
 
 ################################
