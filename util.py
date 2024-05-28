@@ -36,10 +36,10 @@ def performance_timestamp(label:str):
     if MEASURE_PERFORMANCE:
         global previous_time
         if label == "":
-            previous_time = time.time()
+            previous_time = time.process_time()
             return
         
-        time_difference = time.time() - previous_time
+        time_difference = time.process_time() - previous_time
         if label in total_performance:
             total_performance[label] += time_difference
         else:
@@ -49,4 +49,4 @@ def performance_timestamp(label:str):
         log("time", f"{round(time_difference, 4)}", True)
         log("total_time", f"{round(total_performance[label], 4)}", True)
         
-        previous_time = time.time()
+        previous_time = time.process_time()
