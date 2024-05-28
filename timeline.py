@@ -36,6 +36,7 @@ def save_robot_data(robotdata:RobotData):
 def clear_timeline():
     file_address = get_timeline_file_address()
     debug_log("Timeline", f"Clearing timeline file with file address {file_address}")
+    os.makedirs(os.path.dirname(file_address), exist_ok=True)
     with open(file_address, 'w') as file:
         file.write("")
 
