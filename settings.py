@@ -83,7 +83,7 @@ actual_environment_size_y = actual_environment_y_max - actual_environment_y_min
 
 ##### Situation Parameters #####
 
-SITUATION_NAME = "three_rooms"
+SITUATION_NAME = "three_rooms_detail"
 SITUATIONS_PATH = "situations"
 
 ################################
