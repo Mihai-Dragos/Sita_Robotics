@@ -3,7 +3,8 @@ import numpy as np
 from settings import input_shape, h, num_robots, r_avoid
 from settings import actual_environment_size_x, actual_environment_size_y, actual_environment_x_min, actual_environment_x_max, actual_environment_y_min, actual_environment_y_max
 from util import log
-from settings import show_log_grid
+from settings import show_log_grid, show_grid_vis
+from environment import create_cube
 
 def greyscale(shape_array, h):
     grey_grid = np.copy(shape_array).astype(float)
@@ -98,3 +99,21 @@ def get_pos_of_rho(rho):
     cell_pos = [center_of_cell_x, center_of_cell_y]
     # print(f"Cell pos: {cell_pos}")
     return cell_pos
+
+def get_wall_color(row, column):
+    cell_value = grey_grid[row, column]
+    return np.array([cell_value, cell_value, cell_value])
+
+def create_grid_vis(world):
+    base_grid_vis_prim_path = "/World/Grid_Vis/Grid_Vis_"
+    base_grid_vis_name="grid_vis_"
+
+    for row_index in range(number_of_rows):
+        for column_index in range(number_of_columns):
+            create_cube(world, base_grid_vis_prim_path, base_grid_vis_name, 
+                        row_index * number_of_columns + column_index,
+                        np.array([(row_index + 0.5) * normalized_x_steps, 
+                                  (column_index + 0.5) * normalized_y_steps, 
+                                  -0.05]), 
+                        np.array([normalized_x_steps, normalized_y_steps, 0.1]), 
+                        get_wall_color(row_index, column_index))
