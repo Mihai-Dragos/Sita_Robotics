@@ -3,7 +3,7 @@ import numpy as np
 from settings import input_shape, h, num_robots, r_avoid
 from settings import actual_environment_size_x, actual_environment_size_y, actual_environment_x_min, actual_environment_x_max, actual_environment_y_min, actual_environment_y_max
 from util import log
-from settings import show_log_grid, show_grid_vis
+from settings import show_log_grid
 from environment import create_cube
 
 def greyscale(shape_array, h):
