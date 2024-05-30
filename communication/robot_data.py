@@ -16,9 +16,9 @@ class RobotData():
         }
         roll, pitch, yaw = robot.euler_ori[0].item(), robot.euler_ori[1].item(), robot.euler_ori[2].item()
         self.rotation = {
-            'pitch':pitch,
-            'yaw':yaw,
-            'roll':roll
+            'pitch':np.rad2deg(pitch),
+            'yaw':np.rad2deg(yaw),
+            'roll':np.rad2deg(roll)
         }
 
 
