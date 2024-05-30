@@ -10,27 +10,32 @@ import os
 
 
 last_save = time.time()
+last_robot_save = dict()
 
 def get_timeline_file_address():
     file_address = f"{os.path.dirname(__file__)}/{TIMELINE_PATH}/{SITUATION_NAME}.json"
     return file_address
 
-def save_robot_data(robotdata:RobotData):
+def save_robot_data(robot_data:RobotData):
     if not SAVE_TIMELINE:
         return
     debug_log("Timeline", "Trying to save robot data to timeline")
     global last_save
     waitTime = time.time() - last_save
-    if LIMIT_TIMELINE_RATE and TIMELINE_RATE > waitTime:
-        return
+
+    if robot_data.serialNumber in last_robot_save:
+        robotTimeDifference = time.time() - last_robot_save.get(robot_data.serialNumber)
+        if LIMIT_TIMELINE_RATE and TIMELINE_RATE > robotTimeDifference:
+            return
     
     file_address = get_timeline_file_address()
     debug_log("Timeline", f"Adding robot data to timeline with file address {file_address}")
 
     with open(file_address, 'a') as file:
         file.write(f"{waitTime}\n")
-        file.write(f"{json.dumps(robotdata.__dict__)}\n")
+        file.write(f"{json.dumps(robot_data.__dict__)}\n")
         last_save = time.time()
+        last_robot_save.update(robot_data.serialNumber, last_save)
 
 
 def clear_timeline():
@@ -68,8 +73,9 @@ def timeline_thread():
             processTime = time.time() - last_load
 
             debug_log("Timeline", f"Waiting: {waitTime - processTime}s")
-            time.sleep(waitTime - processTime)
-            
+            if (waitTime - processTime > 0):
+                time.sleep(waitTime - processTime)
+
             last_load = time.time()
 
             debug_log("Timeline", f"Sending timeline data not load timeline from file address {file_address}")
