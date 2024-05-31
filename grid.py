@@ -123,8 +123,8 @@ def create_grid_vis(world):
             if (grey_grid[row_index, column_index] == 1):
                 continue
 
-            create_cube(world, base_grid_vis_prim_path, base_grid_vis_name + 1, 
-                        row_index * number_of_columns + column_index,
+            create_cube(world, base_grid_vis_prim_path, base_grid_vis_name, 
+                        row_index * number_of_columns + column_index + 1,
                         np.array([actual_environment_x_min + (row_index + 0.5) * normalized_x_steps, 
                                   actual_environment_y_min + (column_index + 0.5) * normalized_y_steps, 
                                   -0.04998]), 
