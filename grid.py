@@ -4,7 +4,7 @@ from settings import input_shape, h, num_robots, r_avoid
 from settings import actual_environment_size_x, actual_environment_size_y, actual_environment_x_min, actual_environment_x_max, actual_environment_y_min, actual_environment_y_max
 from util import log
 from settings import show_log_grid
-from environment import create_cube
+from environment import create_cube, create_floor_cube
 
 def greyscale(shape_array, h):
     grey_grid = np.copy(shape_array).astype(float)
@@ -109,21 +109,21 @@ def create_grid_vis(world):
     base_grid_vis_name="grid_vis_"
 
     # Create white base
-    create_cube(world, base_grid_vis_prim_path, base_grid_vis_name, 
-                0, 
-                np.array([actual_environment_x_min + 0.5 * actual_environment_size_x, 
-                        actual_environment_y_min + 0.5 * actual_environment_size_y, 
-                        -0.04999]), 
-                        np.array([actual_environment_size_x, actual_environment_size_y, 0.1]), 
-                        np.array([1, 1, 1]))
+    # create_cube(world, base_grid_vis_prim_path, base_grid_vis_name, 
+    #             0, 
+    #             np.array([actual_environment_x_min + 0.5 * actual_environment_size_x, 
+    #                     actual_environment_y_min + 0.5 * actual_environment_size_y, 
+    #                     -0.04999]), 
+    #                     np.array([actual_environment_size_x, actual_environment_size_y, 0.1]), 
+    #                     np.array([1, 1, 1]))
     
     # Add darker cells on top
     for row_index in range(number_of_rows):
         for column_index in range(number_of_columns):
-            if (grey_grid[row_index, column_index] == 1):
+            if (grey_grid[row_index, column_index] > 0.5): #== 1
                 continue
 
-            create_cube(world, base_grid_vis_prim_path, base_grid_vis_name, 
+            create_floor_cube(world, base_grid_vis_prim_path, base_grid_vis_name, 
                         row_index * number_of_columns + column_index + 1,
                         np.array([actual_environment_x_min + (row_index + 0.5) * normalized_x_steps, 
                                   actual_environment_y_min + (column_index + 0.5) * normalized_y_steps, 
