@@ -120,7 +120,7 @@ def create_grid_vis(world):
     # Add darker cells on top
     for row_index in range(number_of_rows):
         for column_index in range(number_of_columns):
-            if (grey_grid[row_index, column_index] > 0.5): #== 1
+            if (grey_grid[row_index, column_index] == 1): 
                 continue
 
             create_floor_cube(world, base_grid_vis_prim_path, base_grid_vis_name, 

@@ -5,9 +5,9 @@ r_avoid = 0.4 # 1.5 in Paper 				# Hardcode avoid radius of robots, used for cal
 r_sense = 0.7 # 2.5 in Paper				# Hardcode sense radius of robots, used for calculating neighboring_i() and neighbouring_cells()
 r_check = 1.2 # equal to r_avoid in Paper		# Hardcode check radius for walls
 
-entering_weight = 0.9							# Hardcode velocity commands weigths
-exploration_weight = 4.0					# | 	2.5 for floorplan # 2 for video
-interaction_weight = 0.35					# | 	0.4 for floorplan # 0.31 for video # 0.05
+entering_weight = 0.9 #0.9							# Hardcode velocity commands weigths
+exploration_weight = 4.3 #4.0					# | 	2.5 for floorplan # 2 for video
+interaction_weight = 0.35 #0.35					# | 	0.4 for floorplan # 0.31 for video # 0.05
 
 c_1 = 1.6       # 1.6 in Paper				# Hardcode parameters for calculate_v_rho0_i()
 alpha = 0.8     # 0.8 in Paper				# |
@@ -37,8 +37,8 @@ show_log_in_shape_boundary = False
 show_log_neighbouring_cells = False
 show_log_shape_exploration_velocity = False
 
-show_log_velocity_commands = False
-show_log_send_robot_actions = False
+show_log_velocity_commands = True
+show_log_send_robot_actions = True
 
 # grid.py
 show_log_grid = False
@@ -48,8 +48,8 @@ show_log_grid = False
 num_robots = 3 					# Number of robots
 lineMode = True					# True: Robots spawn in a line; False: Robots spawn in a grid
 typeRobot = 1       			# 1 -> Jetbot, 2 -> Kaya
-lidarsDrawLines = False			# Show lidar lines?
-lidarsDrawPoints = False		# Show lidar points of surface?
+lidarsDrawLines = True			# Show lidar lines?
+lidarsDrawPoints = True		# Show lidar points of surface?
 
 r_body_size = 0.16 				# Robot dimensions 0.160 x 0.135 x 0.260 [X,Y,Z]
 r_body = 0.09					# Robot is -0.09 away from center in X, so should take that as widest	

@@ -818,28 +818,39 @@ class Main(BaseSample):
             v_x, v_y = self.velocity_commands(robot_index) 
             curr_rot = self.robots[robot_index].euler_ori
             
-            angle_raw = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
-            angle_raw = np.deg2rad(angle_raw)
-            
-            # print(f"Rob: {robot_index} Angle: {np.rad2deg(angle_raw).round(decimals=2)}")
-            angle_threshold = 90 # degrees
-            angle_rotation_only_gain_multiplier = 1.5
-            # if np.abs(angle_raw) > np.deg2rad(angle_threshold):
-            #     #print(f"Rob: {robot_index} angle too large: {np.rad2deg(angle_raw).round(decimals=2)} degrees. Spinning faster and set forward velocity to 0")
-            #     angle = angle_rotation_only_gain_multiplier * angle_gain * (angle_raw)
-            #     forward_raw = 0
-            #     forward = 0
-                
-            # else:
-            angle = angle_gain * (angle_raw)
             forward_raw = (((v_x ** 2) + (v_y ** 2)) ** 0.5)
-            forward = forward_gain * forward_raw
+            angle_raw = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180  #degrees      
+            
+            # Rotation Velocity Compensation: If turning by big amount, forward velocity is smaller
+            # Returns a weight between 0 and 1. If needing to turn 180 degrees, weight 0; If turning 0 degrees, weight = 1
+            rotation_compensation = True
+            if rotation_compensation:
+                rotation_compensation_0 = np.abs(180 - np.abs(angle_raw)) / 180     # Uses abs too many times
+                rotation_compensation_1 = ((180 - np.abs(angle_raw)) % 180) / 180   # Maybe easier to understand?
+
+                rotation_compensation_angle = 1 #(1 + 0.5*(1-rotation_compensation_1))
+
+                # Directly compare effect in print log statement
+                no_rot_comp_angle = angle_gain * np.deg2rad(angle_raw)
+                no_rot_comp_forward = forward_gain * forward_raw
+            else:
+                rotation_compensation_angle = 1
+                rotation_compensation_1 = 1
+
+            angle =  rotation_compensation_angle * angle_gain * np.deg2rad(angle_raw)
+            forward = rotation_compensation_1 * forward_gain * forward_raw
 
             self.robots[robot_index].instance.apply_action(self._Vel_controller.forward(command=[forward, angle]))
             if show_log_send_robot_actions:
                 log("send_robot_actions()", f"Rob: {robot_index} | Velocities forward: {np.round(forward, decimals=2)} m/s | angular: {np.round(angle, decimals=2)} rads/s")
-                log("", f"Raw velocities forward: {np.round(forward_raw, decimals=2)} m/s | angular: {np.round(angle_raw, decimals=2)} rads/s", True)
-    
+                log("", f"Raw velocities forward: {np.round(forward_raw, decimals=2)} m/s | angular: {np.round(angle_raw, decimals=2)} deg/s", True)
+                
+                if rotation_compensation:
+                    log("", f"Target direction: {np.rad2deg(np.arctan2(v_y,v_x)).round(decimals=2)}, Current direction: {np.rad2deg(curr_rot[2]).round(decimals=2)}, Difference: {np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]).round(decimals=2)}")
+                    # log("", f"Without rot comp: {np.round(no_rot_comp_angle,decimals=2)} rad/s, {np.round(no_rot_comp_forward,decimals=2)} m/s | With: {np.round(angle, decimals=2)} rad/s, {np.round(forward, decimals=2)} m/s", True)
+                    log("", f"Rot comp angle multiplier: {np.round(rotation_compensation_angle, decimals=2)} , forward multiplier: {np.round(rotation_compensation_1,decimals=2)}", True)
+                    
+
     # End Velocity command
 
 
