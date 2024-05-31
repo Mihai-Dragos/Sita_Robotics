@@ -35,7 +35,7 @@ def save_robot_data(robot_data:RobotData):
         file.write(f"{waitTime}\n")
         file.write(f"{json.dumps(robot_data.__dict__)}\n")
         last_save = time.time()
-        last_robot_save.update(robot_data.serialNumber, last_save)
+        last_robot_save[robot_data.serialNumber] = last_save
 
 
 def clear_timeline():
