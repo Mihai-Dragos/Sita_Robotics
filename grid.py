@@ -109,7 +109,7 @@ def create_grid_vis(world):
     base_grid_vis_name="grid_vis_"
 
     # Create white base
-    create_cube(world, base_grid_vis_name, base_grid_vis_name, 
+    create_cube(world, base_grid_vis_prim_path, base_grid_vis_name, 
                 -1, 
                 np.array([actual_environment_x_min + 0.5 * actual_environment_size_x, 
                         actual_environment_y_min + 0.5 * actual_environment_size_y, 
