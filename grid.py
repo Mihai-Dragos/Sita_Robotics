@@ -105,15 +105,15 @@ def get_wall_color(row, column):
     return np.array([cell_value, cell_value, cell_value])
 
 def create_grid_vis(world):
-    base_grid_vis_prim_path = "/World/Grid_Vis/Grid_Vis_"
+    base_grid_vis_prim_path = "Grid_Vis/Grid_Vis_"
     base_grid_vis_name="grid_vis_"
 
     for row_index in range(number_of_rows):
         for column_index in range(number_of_columns):
             create_cube(world, base_grid_vis_prim_path, base_grid_vis_name, 
                         row_index * number_of_columns + column_index,
-                        np.array([(row_index + 0.5) * normalized_x_steps, 
-                                  (column_index + 0.5) * normalized_y_steps, 
-                                  -0.05]), 
+                        np.array([actual_environment_x_min + (row_index + 0.5) * normalized_x_steps, 
+                                  actual_environment_y_min + (column_index + 0.5) * normalized_y_steps, 
+                                  -0.04999]), 
                         np.array([normalized_x_steps, normalized_y_steps, 0.1]), 
                         get_wall_color(row_index, column_index))
