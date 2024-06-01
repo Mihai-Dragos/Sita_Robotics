@@ -107,7 +107,7 @@ from settings import actual_environment_size_x, actual_environment_size_y, actua
 from settings import show_vel_spheres, show_robot_obstacle_positions
 from settings import remove_redundant_obstacle_positions
 from settings import EXPORT_DATA
-from data_export import clearExportFile, exportHeader, exportData
+import data_export
 from grid import number_of_rows, number_of_columns, normalized_x_steps, normalized_y_steps
 from grid import grey_grid, get_grid_rho, get_xi_rho, get_pos_of_rho
 from environment_setup import setup_environment
@@ -143,7 +143,7 @@ class Main(BaseSample):
         super().__init__()
         self.v_rho0_cache = {}
         if (EXPORT_DATA):
-            clearData()
+            data_export.clearData()
         return
     
     def setup_scene(self):
@@ -179,7 +179,7 @@ class Main(BaseSample):
         for robot_index in range(num_robots):
             self.robots[robot_index] = Robot(self._world, robot_index)
 
-        exportHeader() # After adding export values in Robot class.
+        data_export.exportHeader() # After adding export values in Robot class.
             
         self._world.add_physics_callback("sending_actions", callback_fn=self.send_robot_actions)
         # Initialize our controller after load and the first reset
@@ -818,7 +818,7 @@ class Main(BaseSample):
             robot.update()
             send_robot_data(robot)
 
-        exportData()
+        data_export.exportData()
 
     # Start Velocity command:
 
