@@ -2,6 +2,7 @@ from omni.isaac.wheeled_robots.robots import WheeledRobot
 import numpy as np
 from grid import get_grid_rho, get_xi_rho
 from settings import actual_environment_x_min, actual_environment_y_min
+from data_values import addExportValue, ExportValue
 from grid import normalized_x_steps, normalized_y_steps
 
 base_robot_name="robot_"
@@ -22,6 +23,7 @@ class Robot:
         self.index = index
         self.instance = world.scene.get_object(f"{base_robot_name}{self.index:02}")
         self.update()
+        self.__add_export_robot_data_values__()
 
     def update(self):
         # Compute pos, requires set instance
@@ -81,3 +83,16 @@ class Robot:
 
         # Center point (in positional meters) of the cell robot i is currently occupying
         return [robot_p_rho_x, robot_p_rho_y, 0]
+    
+    def __add_export_robot_data_values__(self):
+        def getPosition(index):
+            return self.pos[index].__str__()
+        addExportValue(ExportValue(f"robot-{self.index:08}-pos-x"), getPosition(0))
+        addExportValue(ExportValue(f"robot-{self.index:08}-pos-y"), getPosition(1))
+        addExportValue(ExportValue(f"robot-{self.index:08}-pos-z"), getPosition(2))
+
+        def getVelocity(index):
+            return self.vel[index].__str__()
+        addExportValue(ExportValue(f"robot-{self.index:08}-vel-x"), getVelocity(0))
+        addExportValue(ExportValue(f"robot-{self.index:08}-vel-y"), getVelocity(1))
+        addExportValue(ExportValue(f"robot-{self.index:08}-vel-z"), getVelocity(2))

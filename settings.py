@@ -100,6 +100,13 @@ TIMELINE_RATE = 1 / 8 # Minimum time between saves in seconds.
 
 ################################
 
+##### Export Parameters #####
+
+EXPORT_DATA = True
+EXPORT_FILE_ADDRESS = "export/three_rooms_detail_data"
+
+################################
+
 ##### Communicator Parameters #####
 
 CREATE_CONNECTION = False
