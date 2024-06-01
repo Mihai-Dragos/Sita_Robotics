@@ -18,7 +18,7 @@ def exportData():
     '''Write the current export data string to the export file.'''
     exportValue(export_data.getExportString())
 
-def clearData():
+def clearExportFile():
     '''Clear the export file from all previous data.'''
     with open(EXPORT_FILE_ADDRESS + ".csv", "w") as outfile:
         outfile.write("")

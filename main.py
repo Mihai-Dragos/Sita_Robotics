@@ -107,8 +107,7 @@ from settings import actual_environment_size_x, actual_environment_size_y, actua
 from settings import show_vel_spheres, show_robot_obstacle_positions
 from settings import remove_redundant_obstacle_positions
 from settings import EXPORT_DATA
-from data_export import clearData, exportHeader, exportData
-from data_values import addExportValue
+from data_export import clearExportFile, exportHeader, exportData
 from grid import number_of_rows, number_of_columns, normalized_x_steps, normalized_y_steps
 from grid import grey_grid, get_grid_rho, get_xi_rho, get_pos_of_rho
 from environment_setup import setup_environment
@@ -820,7 +819,7 @@ class Main(BaseSample):
             send_robot_data(robot)
 
         exportData()
-        
+
     # Start Velocity command:
 
         for robot_index in range(num_robots): 
