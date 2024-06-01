@@ -85,14 +85,12 @@ class Robot:
         return [robot_p_rho_x, robot_p_rho_y, 0]
     
     def __add_export_robot_data_values__(self):
-        def getPosition(index):
-            return self.pos[index].__str__()
-        addExportValue(ExportValue(f"robot-{self.index:08}-pos-x"), getPosition(0))
-        addExportValue(ExportValue(f"robot-{self.index:08}-pos-y"), getPosition(1))
-        addExportValue(ExportValue(f"robot-{self.index:08}-pos-z"), getPosition(2))
+        # Add position export values for this robot
+        addExportValue(ExportValue(f"robot-{self.index:02}-pos-x"), lambda : self.pos[0])
+        addExportValue(ExportValue(f"robot-{self.index:02}-pos-y"), lambda : self.pos[1])
+        addExportValue(ExportValue(f"robot-{self.index:02}-pos-z"), lambda : self.pos[2])
 
-        def getVelocity(index):
-            return self.vel[index].__str__()
-        addExportValue(ExportValue(f"robot-{self.index:08}-vel-x"), getVelocity(0))
-        addExportValue(ExportValue(f"robot-{self.index:08}-vel-y"), getVelocity(1))
-        addExportValue(ExportValue(f"robot-{self.index:08}-vel-z"), getVelocity(2))
+        # Add velocity export values for this robot
+        addExportValue(ExportValue(f"robot-{self.index:02}-vel-x"), lambda : self.vel[0])
+        addExportValue(ExportValue(f"robot-{self.index:02}-vel-y"), lambda : self.vel[1])
+        addExportValue(ExportValue(f"robot-{self.index:02}-vel-z"), lambda : self.vel[2])
