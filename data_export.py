@@ -3,7 +3,7 @@ from settings import EXPORT_FILE_ADDRESS
 
 def exportString(fileName:str, string:str):
     '''Append a specified string to the specified file.'''
-    with open(fileName + "csv", "a") as outfile:
+    with open(fileName + ".csv", "a") as outfile:
         outfile.write(string)
 
 def exportValue(value:str):
