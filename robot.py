@@ -86,11 +86,11 @@ class Robot:
     
     def __add_export_robot_data_values__(self):
         # Add position export values for this robot
-        addExportValue(ExportValue(f"robot-{self.index:02}-pos-x"), lambda : str(self.pos[0]))
-        addExportValue(ExportValue(f"robot-{self.index:02}-pos-y"), lambda : str(self.pos[1]))
-        addExportValue(ExportValue(f"robot-{self.index:02}-pos-z"), lambda : str(self.pos[2]))
+        addExportValue(ExportValue(f"robot-{self.index:02}-pos-x", lambda : str(self.pos[0])))
+        addExportValue(ExportValue(f"robot-{self.index:02}-pos-y", lambda : str(self.pos[1])))
+        addExportValue(ExportValue(f"robot-{self.index:02}-pos-z", lambda : str(self.pos[2])))
 
         # Add velocity export values for this robot
-        addExportValue(ExportValue(f"robot-{self.index:02}-vel-x"), lambda : str(self.vel[0]))
-        addExportValue(ExportValue(f"robot-{self.index:02}-vel-y"), lambda : str(self.vel[1]))
-        addExportValue(ExportValue(f"robot-{self.index:02}-vel-z"), lambda : str(self.vel[2]))
+        addExportValue(ExportValue(f"robot-{self.index:02}-vel-x", lambda : str(self.vel[0])))
+        addExportValue(ExportValue(f"robot-{self.index:02}-vel-y", lambda : str(self.vel[1])))
+        addExportValue(ExportValue(f"robot-{self.index:02}-vel-z", lambda : str(self.vel[2])))
