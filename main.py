@@ -334,22 +334,27 @@ class Main(BaseSample):
 
         N = self.neighboring_i(robot_index)
 
+        # if len(N) == 0:
+        #     N.append(robot_index) 
+
         if len(N) == 0:
-            N.append(robot_index) 
+            log("calculate_v_rho0_i()", f"Rob: {robot_index} | No neighbours found, so v_rho0_i set to [0.0, 0.0, 0.0]")
+            v_rho0_i = [0.0, 0.0, 0.0]
+            # return v_rho0_i
+        else:
+            p_rho_i = self.robots[robot_index].p_rho_i
+            
+            p_rho_ = []
+            for j in range(len(N)):
+                p_rho_.append(self.robots[N[j]].p_rho_i)
 
-        p_rho_i = self.robots[robot_index].p_rho_i
-        
-        p_rho_ = []
-        for j in range(len(N)):
-            p_rho_.append(self.robots[N[j]].p_rho_i)
 
-
-        term1 = (-1*c_1 / len(N)) * np.array(np.sum([np.multiply(np.sign([a - b for a,b in zip(p_rho_i, p_rho_[j])]) , np.absolute([a - b for a,b in zip(p_rho_i, p_rho_[j])]) ** alpha)
-                        for j in range(len(N))], axis=0))
-        
-        term2 = (1 / len(N)) * np.array(np.sum([robs_initial_v_rho0_i[N[j]] for j in range(len(N))], axis=0))
-        # print(f"Rob: {robot_index} |v_rho0_i term1: {np.round(term1, decimals=2)} | term2: {np.round(term2, decimals=2)}")
-        v_rho0_i = term1 + term2
+            term1 = (-1*c_1 / len(N)) * np.array(np.sum([np.multiply(np.sign([a - b for a,b in zip(p_rho_i, p_rho_[j])]) , np.absolute([a - b for a,b in zip(p_rho_i, p_rho_[j])]) ** alpha)
+                            for j in range(len(N))], axis=0))
+            
+            term2 = (1 / len(N)) * np.array(np.sum([robs_initial_v_rho0_i[N[j]] for j in range(len(N))], axis=0))
+            # log("", f"v_rho0_i term1: {np.round(term1, decimals=2)} | term2: {np.round(term2, decimals=2)}", True)
+            v_rho0_i = term1 + term2
 
         robs_initial_v_rho0_i[robot_index] = v_rho0_i 
         return v_rho0_i
@@ -412,7 +417,7 @@ class Main(BaseSample):
         firstpart = k_1 * xi_rho_i * unit_vector
         secondpart = v_rho0_i
         v_ent_i = ([a + b for a,b in zip(firstpart, secondpart)])
-        # print(f"Rob: {robot_index} | Color: {xi_rho_i} | v_rho0: {np.round(v_rho0_i, decimals=2)}")
+        print(f"Rob: {robot_index} | Color: {xi_rho_i} | v_rho0: {np.round(v_rho0_i, decimals=2)}")
         return v_ent_i
 
     def mu_weight(self, arg):
