@@ -23,8 +23,9 @@ remove_redundant_obstacle_positions = True	# Remove other robots' positions in f
 
 
 ##### Visualisation Parameters #####
-show_vel_spheres = False						# Show Velocity command contributions visually?
+show_vel_spheres = True						# Show Velocity command contributions visually?
 show_grid_vis = True
+show_old_grid_vis = False
 show_robot_obstacle_positions = False #True
 #####################################
 
@@ -48,8 +49,8 @@ show_log_grid = False
 num_robots = 3 					# Number of robots
 lineMode = True					# True: Robots spawn in a line; False: Robots spawn in a grid
 typeRobot = 1       			# 1 -> Jetbot, 2 -> Kaya
-lidarsDrawLines = True			# Show lidar lines?
-lidarsDrawPoints = True		# Show lidar points of surface?
+lidarsDrawLines = False			# Show lidar lines?
+lidarsDrawPoints = False		# Show lidar points of surface?
 
 r_body_size = 0.16 				# Robot dimensions 0.160 x 0.135 x 0.260 [X,Y,Z]
 r_body = 0.09					# Robot is -0.09 away from center in X, so should take that as widest	

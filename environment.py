@@ -56,7 +56,7 @@ def create_situation_walls(world, walls_color:np.ndarray):
         scale = np.array([scale['x'], scale['z'], scale['y']])
         add_wall(world, position, scale, walls_color)
 
-# def create_walls(world, walls_color):
+def create_walls(world, walls_color):       # Commented
 #     Cube_00 = world.scene.add(
 #         FixedCuboid(
 #             prim_path="/World/Walls/Cube_00",
@@ -157,50 +157,9 @@ def create_situation_walls(world, walls_color:np.ndarray):
 #             # visual_material=walls_visual_material,
 #             # physics_material=walls_physics_material,
 #         ))
-#     return
-
-def create_grid_vis(world):
-    # base_grid_vis_prim_path = "/World/Grid_Vis/Grid_Vis_"
-    # base_grid_vis_name="grid_vis_"
-    
-    # wall_color_1 = np.array([1, 1, 1])
-    # wall_color_2 = np.array([0.01, 1, 0.01])
-    # # wall_color = wall_color_1
-    # trans_height = -0.05
-
-    # low_x = np.floor(number_of_rows/2) - 1
-    # high_x = np.ceil(number_of_rows/2) + 1
-    # low_y = np.floor(number_of_columns/2) - 1
-    # high_y = np.ceil(number_of_columns/2) + 1
-
-    # for i in range(number_of_rows+1):
-    #     x = actual_environment_x_min + i*normalized_x_steps
-    #     if (low_x < i < high_x):
-    #         wall_color = wall_color_2
-    #     else:
-    #         wall_color = wall_color_1
-    #     create_cube(world, base_grid_vis_prim_path, 
-    #                 base_grid_vis_name, i,
-    #                 np.array([x, 0, trans_height]), 
-    #                 np.array([0.01, actual_environment_size_y, 0.1]), 
-    #                 wall_color)
-    # for j in range(number_of_columns+1):
-    #     y = actual_environment_y_min + j*normalized_y_steps
-    #     if (low_y < j < high_y):
-    #         wall_color = wall_color_2
-    #     else:
-    #         wall_color = wall_color_1
-    #     world.scene.add(
-    #         FixedCuboid(
-    #             prim_path=f"{base_grid_vis_prim_path}y{j:01}",
-    #             name=f"{base_grid_vis_name}y{j:01}",
-    #             translation=np.array([0, y, trans_height]),
-    #             scale=np.array([actual_environment_size_x, 0.01, 0.1]),  
-    #             color=wall_color,
-    #     ))
     return
 
-# def create_grid_vis_cells(world):
+def create_old_grid_vis_cells(world):       # Commented
 #     base_grid_vis_prim_path = "/World/Grid_Vis/Grid_Vis_"
 #     base_grid_vis_name="grid_vis_"
 
@@ -244,3 +203,4 @@ def create_grid_vis(world):
 #                 scale=np.array([actual_environment_size_x, 0.01, 0.1]),  
 #                 color=wall_color,
 #         ))
+    return

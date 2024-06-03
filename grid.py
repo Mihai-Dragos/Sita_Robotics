@@ -1,4 +1,5 @@
 import numpy as np
+from omni.isaac.core.objects import FixedCuboid
 
 from settings import input_shape, h, num_robots, r_avoid
 from settings import actual_environment_size_x, actual_environment_size_y, actual_environment_x_min, actual_environment_x_max, actual_environment_y_min, actual_environment_y_max
@@ -105,6 +106,7 @@ def get_wall_color(row, column):
     return np.array([cell_value, cell_value, cell_value])
 
 def create_grid_vis(world):
+
     base_grid_vis_prim_path = "Grid_Vis/Grid_Vis_"
     base_grid_vis_name="grid_vis_"
 
@@ -130,3 +132,42 @@ def create_grid_vis(world):
                                   -0.04998]), 
                         np.array([normalized_x_steps, normalized_y_steps, 0.1]), 
                         get_wall_color(row_index, column_index))
+            
+def create_old_grid_vis(world):
+    base_grid_vis_prim_path = "Grid_Vis/Grid_Vis_"
+    base_grid_vis_name="grid_vis_"
+    
+    wall_color_1 = np.array([1, 1, 1])
+    wall_color_2 = np.array([0.01, 1, 0.01])
+    # wall_color = wall_color_1
+    trans_height = -0.05
+
+    low_x = np.floor(number_of_rows/2) - 1
+    high_x = np.ceil(number_of_rows/2) + 1
+    low_y = np.floor(number_of_columns/2) - 1
+    high_y = np.ceil(number_of_columns/2) + 1
+
+    for i in range(number_of_rows+1):
+        x = actual_environment_x_min + i*normalized_x_steps
+        if (low_x < i < high_x):
+            wall_color = wall_color_2
+        else:
+            wall_color = wall_color_1
+        create_cube(world, base_grid_vis_prim_path, 
+                    base_grid_vis_name, i,
+                    np.array([x, 0, trans_height]), 
+                    np.array([0.01, actual_environment_size_y, 0.1]), 
+                    wall_color)
+    for j in range(number_of_columns+1):
+        y = actual_environment_y_min + j*normalized_y_steps
+        if (low_y < j < high_y):
+            wall_color = wall_color_2
+        else:
+            wall_color = wall_color_1
+        create_cube(world, base_grid_vis_prim_path,
+                    base_grid_vis_name, i+1+j,
+                    np.array([0, y, trans_height]),
+                    np.array([actual_environment_size_x, 0.01, 0.1]),
+                    wall_color)
+    
+    return

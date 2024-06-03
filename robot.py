@@ -5,6 +5,8 @@ from settings import actual_environment_x_min, actual_environment_y_min
 from data_values import addExportValue, ExportValue
 from grid import normalized_x_steps, normalized_y_steps
 
+import time
+
 base_robot_name="robot_"
 
 class Robot:
@@ -85,6 +87,9 @@ class Robot:
         return [robot_p_rho_x, robot_p_rho_y, 0]
     
     def __add_export_robot_data_values__(self):
+
+        addExportValue(ExportValue(f"time", lambda : str(time.time())))
+
         # Add position export values for this robot
         addExportValue(ExportValue(f"robot-{self.index:02}-pos-x", lambda : str(self.pos[0])))
         addExportValue(ExportValue(f"robot-{self.index:02}-pos-y", lambda : str(self.pos[1])))
@@ -94,3 +99,6 @@ class Robot:
         addExportValue(ExportValue(f"robot-{self.index:02}-vel-x", lambda : str(self.vel[0])))
         addExportValue(ExportValue(f"robot-{self.index:02}-vel-y", lambda : str(self.vel[1])))
         addExportValue(ExportValue(f"robot-{self.index:02}-vel-z", lambda : str(self.vel[2])))
+
+        # Add velocity command export values for this robot
+        

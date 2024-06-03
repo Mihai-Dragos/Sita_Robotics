@@ -7,15 +7,20 @@ from omni.isaac.sensor import Camera
 
 import numpy as np
 
-from settings import show_walls, show_door, show_grid_vis, show_victim_cube, show_test_wall
-from grid import create_grid_vis
+from settings import show_walls, show_door, show_grid_vis, show_old_grid_vis, show_victim_cube, show_test_wall
+from grid import create_grid_vis, create_old_grid_vis
 from environment import create_situation_walls
 
 def setup_environment(world):
     ### Ground planes ###
     # world.scene.add_default_ground_plane()                                                # Default
-    GroundPlane(prim_path="/World/groundPlane", size=10, color=np.array([0.1, 0.1, 0.4]))   # Custom
-    
+    floor_color_toggle = 1
+    if floor_color_toggle == 1:
+        floor_color = np.array([0.1, 0.1, 0.4])         # Blue
+    elif floor_color_toggle == 2:
+        floor_color = np.array([1.0, 1.0, 1.0])         # White
+    GroundPlane(prim_path="/World/groundPlane", size=10, color=floor_color)   # Custom
+                                                        
     ### Lights ###
     light_1 = prim_utils.create_prim(
         "/World/Light_1",
@@ -73,7 +78,9 @@ def setup_environment(world):
         #create_walls(world, walls_color)    # Create Walls
         create_situation_walls(world, walls_color) # Create walls from situation data
     if show_grid_vis:
-        create_grid_vis(world)          # Create Grid Visualisation
+        create_grid_vis(world)          # Create Grey Grid Visualisation
+    if show_old_grid_vis:
+        create_old_grid_vis(world)      # Create Grid Cell Visualisation
     if show_victim_cube:
         victim_cube = world.scene.add(
             FixedCuboid(
