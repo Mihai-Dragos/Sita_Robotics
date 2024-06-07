@@ -3,8 +3,9 @@ from communication.connection import Connection
 
 from socket import socket, AF_INET, SOCK_STREAM
 import time
+from settings import PORT_NUMBER, SERVER_IP
 
-server_address = ("127.0.0.1", 5000)
+server_address = (SERVER_IP, PORT_NUMBER)
 
 # Open Ipv4 TCP socket
 tcp_socket = socket(AF_INET, SOCK_STREAM)

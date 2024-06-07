@@ -7,6 +7,8 @@ from robot import Robot
 import time
 from timeline import save_robot_data
 from communication.channel import send_message, channel
+from settings import SEND_TIMELINE
+from timeline import send_timeline, stop_timeline
 
 import json
 
@@ -17,8 +19,10 @@ def send_robot_data(robot:Robot):
     send_message(message)
 
 if (__name__ == "__main__"):
+    if SEND_TIMELINE:
+        send_timeline()
+
     while True:
-        time.sleep(0.1)
         log("TCP Client", "Waiting for message or type 'stop' to end connection:")
         input_string = input()
         if (input_string == "stop"): 
@@ -32,7 +36,13 @@ if (__name__ == "__main__"):
         if (input_string == "robot"):
             send_robot_data(RandomRobot())
             continue
+        if (input_string == "timeline"):
+            send_timeline()
+            continue
         send_message(input_string)
+
+    if SEND_TIMELINE:
+        stop_timeline()
 
     debug_log("TCP Client", "Closing connection")
     if channel:

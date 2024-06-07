@@ -1,7 +1,7 @@
 import time
 import numpy as np
 
-from settings import LOG_CONTEXT_SPACE, MEASURE_PERFORMANCE
+from settings import LOG_CONTEXT_SPACE, MEASURE_PERFORMANCE, DEBUG_LOG
 
 def mod(a, n):
     res = a - np.floor(a/n) * n
@@ -16,8 +16,6 @@ def log(context:str, message:str, shifted:bool=False):
         print(f"{spacing}{context} | {message}\n", end="")
     else: 
         print(f"{context}{spacing} | {message}\n", end="")
-
-DEBUG_LOG = True
 
 debug_contexts = set()
 

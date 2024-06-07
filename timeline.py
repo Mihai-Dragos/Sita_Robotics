@@ -11,6 +11,7 @@ import os
 
 last_save = time.time()
 last_robot_save = dict()
+timeline_active = False
 
 def get_timeline_file_address():
     file_address = f"{os.path.dirname(__file__)}/{TIMELINE_PATH}/{SITUATION_NAME}.json"
@@ -59,7 +60,7 @@ def timeline_thread():
     global last_load
     
     with open(file_address, 'r') as file:
-        while True:
+        while timeline_active:
             # Check if there is still a line to read.
             readline = file.readline()
             if not readline:
@@ -83,12 +84,19 @@ def timeline_thread():
 
     log("Timeline", "Finished sending timeline data")
 
-
+thread = Thread(target=timeline_thread)
 def send_timeline():
-    debug_log("Timeline", "Sending data from timeline")
-    Thread(target=timeline_thread).start()
+    global timeline_active
+    if (not timeline_active):
+        debug_log("Timeline", "Sending data from timeline")
+        timeline_active = True
+        thread = Thread(target=timeline_thread)
+        thread.start()
+
+def stop_timeline():
+    global timeline_active
+    timeline_active = False
+    thread.join()
 
 if SAVE_TIMELINE:
     clear_timeline()
-elif SEND_TIMELINE:
-    send_timeline()

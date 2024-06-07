@@ -6,6 +6,7 @@ from queue import Queue
 from threading import Thread
 import time
 from collections.abc import Callable
+from settings import DEBUG_LOG
 
 class Connection():
 
@@ -123,9 +124,9 @@ class Connection():
 
             if (not self._writing): 
                 break # End sender thread as we should stop writing 
-            
-            log("Sender", "Sending message:")
-            log("", f"{message}")
+            if (DEBUG_LOG):
+                log("Sender", "Sending message:")
+                log("", f"{message}")
             self.__send__(message)
         
         debug_log("Sender", "Reached end of sender thread")

@@ -1,6 +1,6 @@
 from util import log, debug_log
 from communication.TCP_client import create_tcp_connection
-from settings import CREATE_CONNECTION
+from settings import CREATE_CONNECTION, DEBUG_LOG
 
 
 class Channel():
@@ -9,14 +9,16 @@ class Channel():
         self.connection.add_receive_listener(Channel.on_receive_message)
 
     def send_message(self, message:str):
-        log("Channel", "Sending message:")
-        log("", f"{message}")
+        if (DEBUG_LOG):
+            log("Channel", "Sending message:")
+            log("", f"{message}")
         self.connection.send_message(message.encode("utf-8"))
 
     def on_receive_message(data:bytes):
-        log("Channel", "Received message")
         message = data.decode("utf-8")
-        log("", f"\'{message}\'")
+        if (DEBUG_LOG):
+            log("Channel", "Received message")
+            log("", f"\'{message}\'")
 
     def close(self):
         self.connection.close()

@@ -110,11 +110,16 @@ EXPORT_FILE_ADDRESS = "export/three_rooms_detail_data"
 
 ##### Communicator Parameters #####
 
-CREATE_CONNECTION = False
+PORT_NUMBER = 5646
+SERVER_IP = "127.0.0.1"
+CREATE_CONNECTION = True
 
 ################################
 
 ##### Utility Parameters #####
+
+DEBUG_LOG = False
 LOG_CONTEXT_SPACE = 29
 MEASURE_PERFORMANCE = True
+
 ###############################
