@@ -24,8 +24,8 @@ def save_robot_data(robot_data:RobotData):
     global last_save
     waitTime = time.time() - last_save
 
-    if robot_data.serialNumber in last_robot_save:
-        robotTimeDifference = time.time() - last_robot_save.get(robot_data.serialNumber)
+    if robot_data.serial in last_robot_save:
+        robotTimeDifference = time.time() - last_robot_save.get(robot_data.serial)
         if LIMIT_TIMELINE_RATE and TIMELINE_RATE > robotTimeDifference:
             return
     
@@ -36,7 +36,7 @@ def save_robot_data(robot_data:RobotData):
         file.write(f"{waitTime}\n")
         file.write(f"{json.dumps(robot_data.__dict__)}\n")
         last_save = time.time()
-        last_robot_save[robot_data.serialNumber] = last_save
+        last_robot_save[robot_data.serial] = last_save
 
 
 def clear_timeline():
@@ -90,13 +90,16 @@ def send_timeline():
     if (not timeline_active):
         debug_log("Timeline", "Sending data from timeline")
         timeline_active = True
+        global thread
         thread = Thread(target=timeline_thread)
         thread.start()
 
 def stop_timeline():
     global timeline_active
+    if (thread.is_alive()):
+        timeline_active = False
+        thread.join()
     timeline_active = False
-    thread.join()
 
 if SAVE_TIMELINE:
     clear_timeline()
