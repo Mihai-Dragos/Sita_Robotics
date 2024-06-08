@@ -3,11 +3,11 @@ import numpy as np
 import random
 
 class RobotData():
-    serialNumber:str
+    serial:str
     position:dict[str, float]
     rotation:dict[str, float]
     def __init__(self, robot:Robot):
-        self.serialNumber = f"{robot.index:08}"
+        self.serial = f"{robot.index:08}"
         x, z, y = robot.pos[0].item(), robot.pos[1].item(), robot.pos[2].item()
         self.position = {
             'x':x,
