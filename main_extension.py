@@ -23,7 +23,7 @@ class MainExtension(BaseSampleExtension):
             name="ISBEP Sim",
             title="Exploration Planning Simulation",
             doc_link="https://docs.omniverse.nvidia.com/isaacsim/latest/core_api_tutorials/tutorial_core_hello_world.html",
-            overview="This is ISBEP Sim Code 8 May 2024 version",
+            overview="This is ISBEP Sim Code 8 June 2024 version",
             file_path=os.path.abspath(__file__),
             sample=Main(),
         )

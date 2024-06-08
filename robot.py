@@ -100,5 +100,4 @@ class Robot:
         addExportValue(ExportValue(f"robot-{self.index:02}-vel-y", lambda : str(self.vel[1])))
         addExportValue(ExportValue(f"robot-{self.index:02}-vel-z", lambda : str(self.vel[2])))
 
-        # Add velocity command export values for this robot
         

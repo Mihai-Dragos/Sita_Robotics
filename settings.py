@@ -3,11 +3,11 @@ from shapes import *
 ##### Research Paper Parameters #####
 r_avoid = 0.4 # 1.5 in Paper 				# Hardcode avoid radius of robots, used for calculating l_cell
 r_sense = 0.7 # 2.5 in Paper				# Hardcode sense radius of robots, used for calculating neighboring_i() and neighbouring_cells()
-r_check = 1.2 # equal to r_avoid in Paper		# Hardcode check radius for walls
+r_check = 1.2 # equal to r_avoid in Paper	# Hardcode check radius for walls
 
-entering_weight = 0.9 #0.9							# Hardcode velocity commands weigths
-exploration_weight = 4.3 #4.0					# | 	2.5 for floorplan # 2 for video
-interaction_weight = 0.35 #0.35					# | 	0.4 for floorplan # 0.31 for video # 0.05
+entering_weight = 0.9						# Hardcode velocity commands weigths
+exploration_weight = 4.3 					
+interaction_weight = 0.35 					
 
 c_1 = 1.6       # 1.6 in Paper				# Hardcode parameters for calculate_v_rho0_i()
 alpha = 0.8     # 0.8 in Paper				# |
@@ -23,10 +23,10 @@ remove_redundant_obstacle_positions = True	# Remove other robots' positions in f
 
 
 ##### Visualisation Parameters #####
-show_vel_spheres = True						# Show Velocity command contributions visually?
-show_grid_vis = True
-show_old_grid_vis = False
-show_robot_obstacle_positions = False #True
+show_vel_spheres = False						# Show Velocity command contributions visually?
+show_robot_obstacle_positions = False			# Show considerd Collision Points visually?
+show_grid_vis = True							# Show Greyscale grid visually?
+show_old_grid_vis = False						# Show grid lines visually?
 #####################################
 
 ##### Print\Log Parameters #####
@@ -49,7 +49,7 @@ show_log_grid = False
 num_robots = 3 					# Number of robots
 lineMode = True					# True: Robots spawn in a line; False: Robots spawn in a grid
 typeRobot = 1       			# 1 -> Jetbot, 2 -> Kaya
-lidarsDrawLines = False			# Show lidar lines?
+lidarsDrawLines = False#True	# Show lidar lines?
 lidarsDrawPoints = False		# Show lidar points of surface?
 
 r_body_size = 0.16 				# Robot dimensions 0.160 x 0.135 x 0.260 [X,Y,Z]
@@ -59,8 +59,8 @@ r_body = 0.09					# Robot is -0.09 away from center in X, so should take that as
 
 ##### Environment Parameters #####
 input_shape = shape_array_floorplan		# Navigation shape that robots should explore.
-# h = np.ceil((n_cell ** 0.5)/2)			# Calculated number of iterations for greyscale()
-h = 4 #2 								# Hardcode Number of iterations for greyscale()
+# h = np.ceil((n_cell ** 0.5)/2)		# Calculated number of iterations for greyscale()
+h = 4 	 								# Hardcode Number of iterations for greyscale()
 
 # actual_environment_x_min = -1.4		# Hardcode actual enviroment size (of biggest room) in meters
 # actual_environment_x_max = 1.4
@@ -73,7 +73,7 @@ show_door = False
 show_test_wall = False
 show_victim_cube = False
 
-a_e_v_amount = 3 #1.5					# Hardcode set enviroment size in meters to test shape_entering_velocity()
+a_e_v_amount = 3						# Hardcode set enviroment size in meters to test shape_entering_velocity()
 actual_environment_x_min = -a_e_v_amount
 actual_environment_x_max = a_e_v_amount
 actual_environment_y_min = -a_e_v_amount

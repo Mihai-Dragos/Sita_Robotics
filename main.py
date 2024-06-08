@@ -1,75 +1,3 @@
-# Optimization
-#   `interaction_velocity()` now pre-calculates `get_robot_vel()` before performing actual calculation
-#   `interaction_velocity()` changed to reduce occasional errors on reset
-# Removing/moving "Hardcode" values to settings
-#   `in_shape_boundary()` changed to no longer use hardcoded `r_sense_cell_x` & `r_sense_cell_y` and to use calculated values
-#   `c_1` & `alpha` moved to settings.py. Removed from `calculate_v_rho0_i()`
-#   `r_check` moved to settings.py. Removed from `mu_weight` and `find_collision_points_index()`
-#       Note: Could not move hardcoded paper parameters from `shape_entering_velocity()`, `shape_exploration_velocity()`, and `interaction_velocity()`
-# Improve Demo
-#   Created `create_vel_vis()` in robots.py to visually show each velocity's contributions on each robot. Affected main.py global variables and `velocity_commands()`
-#   Created new camera: `TopDownCamera` in enviroment.py
-#   Created new light: `light_2` in enviroment.py
-#   Created new shape: `shape_array_floorplan` in shapes.py
-#   Changed settings.py parameter values:
-#       `r_sense`:      1   -> 0.7
-#       `h`:            2   -> 4
-#       `a_e_v_amount`: 1.5 -> 3
-#       `input_shape`:  ..._largerect -> _floorplan
-#   Changed `velocity_commands()` parameter values: (Still to be adjusted!)
-#       `entering_weight`:    1   -> 1
-#       `exploration_weight`: 2   -> 2.5
-#       `interaction_weight`: 0.31 -> 0.4
-# Housekeeping
-#   Created new function `get_n_cell_l_cell()` in grid.py which returns values `n_cell` and `l_cell`. Removed this calculation from `calculate_rho_0()`
-#   Renamed `num_iterations` back to `h` to align with paper parameter names. Affected `greyscale()` & `calculate_rho_0()`
-# 13 May 2024 22:50
-
-# Improve Demo
-#   Made `create_vel_vis()` actually work and show the contributions of each velocity of each 
-#   Added code in `setup_scene()` & `velocity_commands()` to create and update velocity visualization spheres respectively
-#       Improved method from yesterday (Method 0) and created 2 additional methods (Methods 1 & 2) for it. Method 2 was made to troubleshoot Method 1.
-#   Made `show_vel_spheres` in settings.py to toggle creating and calculating velocity visualization spheres
-#   Made `create_vel_vis_material()` to offload tasks within `velocity_commands()`
-#   Changed size of `Cube_05` to get better demo results: x = 0.8 -> 0.4
-#   Changed parameter values: (Still to be adjusted, but this is defs better than previous)
-#       `r_check`:              1   -> 1.2
-#       `entering_weight`:      1   -> 0.9
-#       `exploration_weight`:   2.5 -> 4.0
-#       `interaction_weight`:   0.4 -> 0.35
-# Optimization
-#   Forwarding `base_sphere_prim_path` & `base_sphere_prim_path_suffix` from robots.py for velocity visualization spheres in `velocity_commands()`
-#   Pre-calculating values in `velocity_commands()` for velocity visualization spheres
-# Housekeeping
-#   Moved robot and lidar parameters to settings.py from robots.py  
-#   Moved parameters to settings.py from `velocity_commands()` , `shape_entering_velocity()` & `interaction_velocity()`
-#   Renamed and moved parameters to settings.py: [kf & ka] -> [forward_gain & angle_gain] 
-#   Grouped and organized settings.py
-#   Grouped import statements in main.py by type, use, and relevancy
-#   Improved printouts of `velocity_commands()` and `send_robot_actions()`
-# 14 May 2024 21:29
-
-
-# Improve Demo
-#   Created `reverse_greyscale()` in grid.py to make robots explore away from spawn
-#   Created `show_robot_obstacle_positions` feature in `find_collision_points()`. Toggled in settings.py. FPS [enabled/disabled]: `[ 12 / 18.5 ]`
-#       Created toggle `remove_unnessesary_obs_spheres`. FPS [enabled/disabled]: `[ 4.5 / 11 ]`  
-#   Created modifier `remove_redundant_obstacle_positions` in `find_collision_points()` to remove robot positions that lidar detected. Toggled in settings.py
-#   Changed `send_robot_actions()`. Added condition to make robots stop and rotate as desired then move forward. This may be solved using a Pure Pursuit as well.
-#       2 new local parameters to tune: `angle_threshold` and `angle_rotation_only_gain_multiplier`
-# Troubleshooting Additions
-#   Created shapes `rev_shape_array_25` and `rev_shape_array_25_assisted` to test `reverse_greyscale()` 
-# Housekeeping
-#   Added toggles to control environment.py using settings.py: `show_walls`, `show_door`, `show_grid_vis`, `show_victim_cube`, `show_test_wall`
-#   Grouped import statements in environment.py by type and use
-#   Grouped import statements in grid.py by type and use
-#   Added toggles to control print/log in main.py: `show_log_velocity_commands`, `show_log_get_robot_target_rho`, `show_log_find_collision_points`, `show_interaction_velocity`, `show_log_in_shape_boundary`, `show_log_neighbouring_cells`, `show_log_shape_exploration_velocity`, `show_log_send_robot_actions`
-#       Affected: `velocity_commands()`, `get_robot_target_rho()`, `find_collision_points()`, `interaction_velocity()`, `in_shape_boundary()`, `neighbouring_cells()`, `shape_exploration_velocity()`, `send_robot_actions()`
-#   Moved `r_body` from `occupied_cells()` to settings.py
-#       Updated value of `r_body` as robot is center is asymmetrical: [0.16 -> 0.09]. Created `r_body_size` with value 0.16.
-#           If any problems with `occupied_cells`, this may be why. Use `r_body_size` to maybe resolve it.
-# 17 May 2024 21:28
-
 from omni.isaac.examples.base_sample import BaseSample
 
 import numpy as np
@@ -79,18 +7,13 @@ directory_setup()
 import omni                                                     # Provides the core omniverse apis
 import asyncio                                                  # Used to run sample asynchronously to not block rendering thread
 from omni.isaac.range_sensor import _range_sensor               # Imports the python bindings to interact with lidar sensor
-from pxr import UsdGeom, Gf, UsdPhysics                         # pxr usd imports used to create the cube
 
-from pxr import UsdShade, Sdf, Gf
+from pxr import UsdShade, Sdf, Gf, Vt, UsdPhysics
 from omni.isaac.core.materials import OmniPBR
 import omni.isaac.core.utils.prims as prims_utils
-from pxr import UsdGeom, Gf, Vt
-
 from omni.isaac.core.physics_context import PhysicsContext
-# import omni.isaac.core.utils.prims as prim_utils
 
-from controllers import DiffDriveController, HoloController
-
+from controllers import DiffDriveController
 from omni.isaac.wheeled_robots.controllers.wheel_base_pose_controller import WheelBasePoseController
 from omni.isaac.wheeled_robots.controllers.differential_controller import DifferentialController
 from omni.isaac.wheeled_robots.controllers.holonomic_controller import HolonomicController
@@ -98,7 +21,6 @@ from omni.isaac.wheeled_robots.controllers.holonomic_controller import Holonomic
 stage = omni.usd.get_context().get_stage()                      # Used to access Geometry
 timeline = omni.timeline.get_timeline_interface()               # Used to interact with simulation
 lidarInterface = _range_sensor.acquire_lidar_sensor_interface() # Used to interact with the LIDAR
-
 
 from settings import num_robots, input_shape, h, r_avoid, r_sense, r_check, r_body
 from settings import entering_weight, exploration_weight, interaction_weight
@@ -124,14 +46,12 @@ obs_counter = 0
 highest_obs_index = [0 for _ in range(num_robots)]
 
 # For Velocity Visualisation Spheres in velocity_commands()
-# Methods 0 & 1 - Detailed in velocity_commands()
 mtl_created_list = []
-# Methods 1 & 2 - Detailed in velocity_commands()
 spheres_prim = [[0,0,0] for _ in range(num_robots)]
 spheres_mat = [[0,0,0] for _ in range(num_robots)]
 mtl_prim = [[0,0,0] for _ in range(num_robots)] 
 
-# Inital v_rho0_i
+# Inital v_rho0_i set to 0
 robs_initial_v_rho0_i = [[0,0,0] for _ in range(num_robots)]
 
 class Main(BaseSample):
@@ -152,7 +72,6 @@ class Main(BaseSample):
         setup_robots(self.world)
         
         if show_vel_spheres:
-            # Methods 0 & 1 - Detailed in velocity_commands()
             for _ in range(num_robots):
                 for _ in range(3):
                     omni.kit.commands.execute(
@@ -161,17 +80,6 @@ class Main(BaseSample):
                         mtl_name=f"OmniPBR",
                         mtl_created_list=mtl_created_list,
                     )
-                    
-            # # Method 2 - Detailed in velocity_commands()
-            # for i in range(num_robots):
-            #     for vel in range(3):
-            #         omni.kit.commands.execute(
-            #             "CreateMdlMaterialPrimCommand",
-            #             mtl_url="OmniPBR.mdl",
-            #             mtl_name=f"OmniPBR_{i:02}_{vel:01}",
-            #             mtl_path= f"/World/Looks/OmniPBR_{i:02}_{vel:01}",
-            #         )
-            #         print(f"mtl_created count: {3*i + vel}")
         
     async def setup_post_load(self):
         self._world = self.get_world()
@@ -189,29 +97,10 @@ class Main(BaseSample):
                                                             DifferentialController(name="diff_controller",
                                                                                     wheel_radius=0.03, wheel_base=0.1125),
                                                     is_holonomic=False)
-        # # Made this to test difference if holonomic is set to true. To be tested
-        # self._WBPholo_controller = WheelBasePoseController(name="wheel_base_pose_controller",
-        #                                                 open_loop_wheel_controller=
-        #                                                     DifferentialController(name="diff_controller",
-        #                                                                             wheel_radius=0.03, wheel_base=0.1125),
-        #                                             is_holonomic=True)
         
-        # # Can continue to implement holonomic controller if required.
-        # # https://docs.omniverse.nvidia.com/py/isaacsim/source/extensions/omni.isaac.wheeled_robots/docs/index.html
-        # self._holo_controller = HolonomicController(name="holonomic_controller",
-        #                                             wheel_radius=np.array([0.04, 0.04, 0.04]),
-        #                                             wheel_positions=np.array([(-0.098043, 0.0006367, -0.050501),(0.05,-0.084525,-0.050501),(0.05,0.08569,-0.50501)]), 
-        #                                             wheel_orientations=np.array([(0,0,0,1), (0.866,0,0,-0.5), (0.866,0,0,0.5)]),
-        #                                             mecanum_angles=np.array([-90, -90, -90]),
-        #                                             wheel_axis=np.array([1,0,0]),
-        #                                             up_axis=np.array([0,0,1])
-        #                                             )
-
         # Changing inital v_rho0_i from [0,0,0] to become get_robot_vel() initially. 
         # Afterwards these values are overwritten in calculate_v_rho0_i() as intented
         for robot_index in range(num_robots):
-            # print("in loop")
-            # (np.allclose(robs_initial_v_rho0_i[robot_index], [0,0,0],atol=1e-08)):
             robs_initial_v_rho0_i[robot_index] = self.robots[robot_index].vel
         return
     
@@ -250,7 +139,6 @@ class Main(BaseSample):
             entering_mag = np.linalg.norm(v[0])
             exploration_mag = np.linalg.norm(v[1])
             interaction_mag = np.linalg.norm(v[2])
-            total_mag_simple = np.linalg.norm(v_i) # Would sometimes let color value get larger than 2
             total_mag = entering_mag + exploration_mag + interaction_mag
 
             entering_color = Gf.Vec3f((entering_mag/total_mag), 0.0, 0.0)
@@ -261,15 +149,6 @@ class Main(BaseSample):
                 log("induvidual color %", f"Ent (R): {np.round(vel_colors[0][0]*50, decimals=2)}% | Exp (G): {np.round(vel_colors[1][1]*50, decimals=2)}% | Int (B): {np.round(vel_colors[2][2]*50, decimals=2)}%", True)
             
             stage = omni.usd.get_context().get_stage()
-            
-            # # Method 0 - Not caching sphereprims or materials and reusing same variables for each one
-            # for vel in range(3):
-            #     mtl_prim = stage.GetPrimAtPath(mtl_created_list[robot_index*3 + vel])
-            #     omni.usd.create_material_input(mtl_prim, "diffuse_color_constant", vel_colors[vel], Sdf.ValueTypeNames.Color3f)
-            #     path = f"{base_sphere_prim_path}{robot_index:02}/chassis{base_sphere_prim_path_suffix[vel]}{robot_index:02}"
-            #     sphere_prim = stage.GetPrimAtPath(path)
-            #     sphere_mat_shade = UsdShade.Material(mtl_prim)
-            #     UsdShade.MaterialBindingAPI(sphere_prim).Bind(sphere_mat_shade, UsdShade.Tokens.strongerThanDescendants)
 
             # Method 1 - Each prim and material is indexed by robot index and velocity command, so each sphere has unique id
             # vel: 0 ent, 1 exp, 2 int
@@ -280,25 +159,8 @@ class Main(BaseSample):
                 spheres_prim[robot_index][vel] = stage.GetPrimAtPath(path)
                 spheres_mat[robot_index][vel] = UsdShade.Material(mtl_prim[robot_index][vel])
                 UsdShade.MaterialBindingAPI(spheres_prim[robot_index][vel]).Bind(spheres_mat[robot_index][vel], UsdShade.Tokens.strongerThanDescendants)
-            # performance_timestamp("Set colors")
-            # # Method 2 - [Made for Troubleshooting] Same as Method 1 but creating and applying are done seperately instead of together
-            # for vel in range(3):
-            #     mtl_prim[robot_index][vel] = stage.GetPrimAtPath(f"/Looks/OmniPBR_{robot_index:02}_{vel:01}") #mtl_created_list[robot_index*3 + vel]
-            #     omni.usd.create_material_input(mtl_prim[robot_index][vel], "diffuse_color_constant", vel_colors[vel], Sdf.ValueTypeNames.Color3f)
-            #     path = f"{base_sphere_prim_path}{robot_index:02}/chassis{base_sphere_prim_path_suffix[vel]}{robot_index:02}"
-            #     omni.kit.commands.execute(
-            #         'BindMaterialCommand',
-            #         prim_path=path,
-            #         material_path=f"/World/Looks/OmniPBR_{robot_index:02}_{vel:01}",
-            #         strength='strongerThanDescendants'
-            #     )
-            #     print(f"Bound Rob: {robot_index}, vel: {vel}")
-           
+            # performance_timestamp("Set colors")   
         return v_i
-    
-    # def get_robot_v_rho0(self, v_rho0, robot_index):
-    #         v_rho0_j = v_rho0 - self.robots[robot_index].vel
-    #         return v_rho0_j
 
     def neighboring_i(self, robot_index):
         base_robot = self.robots[robot_index]
@@ -316,31 +178,15 @@ class Main(BaseSample):
     def calculate_v_rho0_i(self, robot_index):
         """
         Calculate the local interpretation of the moving velocity of the entire shape.
-        
-        Parameters:
-        # - p_rho_i: The position interpretation of robot i.
-        N_i: The set of neighbors of robot i. And j is used to go through each neighboring robot
-        # - neighbors_p_rho: The position interpretations of robot i's neighbors.
-        # - neighbors_v_rho: The velocities of robot i's neighbors.
-        - c1: Constant gain for the first term. 0 < c_1
-        - alpha: Constant gain for the first term, 0 < alpha < 1.
-        num_robots: Number of robots in scene
-        i: Index of robot {1, ..., num_robot}
-        v_rho_j: 
-        
         Returns:
         - v_rho_i: The local interpretation of the moving velocity of the entire shape for robot i.
         """
 
         N = self.neighboring_i(robot_index)
 
-        # if len(N) == 0:
-        #     N.append(robot_index) 
-
         if len(N) == 0:
             log("calculate_v_rho0_i()", f"Rob: {robot_index} | No neighbours found, so v_rho0_i set to [0.0, 0.0, 0.0]")
             v_rho0_i = [0.0, 0.0, 0.0]
-            # return v_rho0_i
         else:
             p_rho_i = self.robots[robot_index].p_rho_i
             
@@ -361,13 +207,9 @@ class Main(BaseSample):
 
     def get_robot_target_rho(self, robot_index):
         curr_rho_x, curr_rho_y = self.robots[robot_index].rho
-       
         area = grey_grid[curr_rho_x-1:curr_rho_x+2, curr_rho_y-1:curr_rho_y+2]
-        
         local_min = np.min(area)
-        
         local_min_ind = np.unravel_index(area.argmin(), area.shape)
-        # print("local min ind", local_min_ind)
         target_rho = [curr_rho_x + local_min_ind[0] -1, curr_rho_y + local_min_ind[1] -1]
         
         if (local_min == 0) & (np.array_equal(local_min_ind,[1,1])):
@@ -389,16 +231,8 @@ class Main(BaseSample):
         """
         Calculate the shape-entering velocity component for a robot.
         
-        Parameters:
-        robot_index: The index of robot i
-        # - p_i: The current position of robot i (numpy array).
-        # - p_t_i: The target position for robot i (numpy array).
-        # - k_1: Constant gain (float).
-        # - xi_rho_i: Grey level of that cell (float).
-        # - v_rho0_i: The local interpretation of the moving velocity of the entire shape (numpy array).
-        
         Returns:
-        - v_ent_i: The shape-entering velocity component (numpy array).
+        - v_ent_i: The shape-entering velocity component
         """
 
         # Selected the position of center of cell the robot is currently in
@@ -469,16 +303,12 @@ class Main(BaseSample):
             elif len(wall_indices) > 0:
                 # Find the index of the minimum distance to robot from of all wall_indices of the wall
                 collision_points_index.append(wall_indices[np.argmin(np.array(distance[wall_indices[0]:wall_indices[-1]]))]) # -1 is last index
-            
-            
-            # print("collision_points_index", collision_points_index) 
+        
             return np.array(collision_points_index)
         
     def find_collision_points(self, robot_index):
         coll_ind = np.array(self.find_collision_points_index(robot_index))
         obstacle_pos = []
-
-        # print(f"find_collision_points()       | coll_ind: {coll_ind} | coll_ind.size {coll_ind.size}")
         if not coll_ind.size:           # If no walls, return empty array # Same as if len(coll_ind) <= 0
             if show_log_find_collision_points: 
                 log("find_collision_points()", "No collision points found, output set to []")
@@ -493,9 +323,9 @@ class Main(BaseSample):
             obstacle_pos.append( [ float(curr_pos[0] + distance[coll_ind]*np.cos(curr_ori[2] + angle[coll_ind])) , float(curr_pos[1] + distance[coll_ind]*np.sin(curr_ori[2] + angle[coll_ind])) , 0.0 ] )
         else:
             for i in range(coll_ind.size): # Should work same as for i in range(len(coll_ind)):
-                obstacle_pos.append( [ float(curr_pos[0] + distance[coll_ind[i]]*np.cos(curr_ori[2] + angle[coll_ind[i]])) , float(curr_pos[1] + distance[coll_ind[i]]*np.sin(curr_ori[2] + angle[coll_ind[i]])) , 0.0 ] )
-                
+                obstacle_pos.append( [ float(curr_pos[0] + distance[coll_ind[i]]*np.cos(curr_ori[2] + angle[coll_ind[i]])) , float(curr_pos[1] + distance[coll_ind[i]]*np.sin(curr_ori[2] + angle[coll_ind[i]])) , 0.0 ] )    
         # performance_timestamp("")
+        
         # Modifier toggled in settings.py
         if remove_redundant_obstacle_positions:
             show_log_remove_redundant_obstacle_positions = False
@@ -517,13 +347,13 @@ class Main(BaseSample):
                             print(f"Redundant position: {np.round(obstacle_pos[obstacle_index],decimals=2)}, index: {obstacle_index}. Too close to robot position: {np.round(robot_pos[other_robot_index],decimals=2)}, distance: {np.round(dist,decimals=2)}m")
                         indicies_to_delete.append(obstacle_index)
             # performance_timestamp("check obstacle position at robots")
-            # print(f"indicies_to_delete: {indicies_to_delete}")
             if np.array(indicies_to_delete).size > 0:               # Only attempt to delete if indicies_to_delete not empty list
                 for obstacle_index in range(len(indicies_to_delete)-1, -1, -1):  # Have to go in reverse order to ensure correct values deleted
                     del obstacle_pos[indicies_to_delete[obstacle_index]]
                 if show_log_remove_redundant_obstacle_positions:
                     print(f"Redundant position(s) {indicies_to_delete} deleted, updated Rob {robot_index} Obstacles:\n{np.array(obstacle_pos).round(decimals=2)}")
             # performance_timestamp("delete obstacle positions at robot")
+        
         # Visualisation 
         if show_robot_obstacle_positions:
 
@@ -611,20 +441,15 @@ class Main(BaseSample):
 
             
             v_i = self.robots[robot_index].vel
-            # print(f"Before: v_i: {v_i} | v_i.size: {v_i.size}")
             if v_i.size <= 1:
                 v_i = np.array([0.0 , 0.0 , 0.0])
-            # print(f"After: v_i: {v_i} | v_i.size: {v_i.size}")
             v_ = []
             for j in range(len(N)):
                 v_.append(self.robots[N[j]].vel)
             v_ = np.array(v_)
-            # print(f"Before: v_: {v_} | v_.size: {v_.size}")
             if v_.size <= 2:
                 v_ = np.array([0.0 , 0.0 , 0.0])
-            # print(f"After: v_: {v_} | v_.size: {v_.size}")
             
-
             term2 = np.array(np.sum([
                                 np.multiply(
                                     (1 / len(N)) , np.subtract(v_i, v_[j]) #[a - b for a,b in zip(v_i, v_[j])]
@@ -642,8 +467,6 @@ class Main(BaseSample):
             # Selected the position of center of cell the robot is currently in
             p_i = self.robots[robot_index].pos # get_robot_p_rho0
 
-            # print(f"len_sum: {length_sum} | p:{p} ")
-            # print(f"mu {self.mu_weight(np.linalg.norm( [a - b for a,b in zip(p_i, p[0])] ))} | subtraction: {[a - b for a,b in zip(p_i, p[0])]}")
             term1 = np.array(np.sum([
                                     np.multiply(
                                         self.mu_weight( 
@@ -656,8 +479,6 @@ class Main(BaseSample):
         
         firstterm = np.multiply(term1, k_3)
         v_int_i = ([a - b for a,b in zip(firstterm, term2)])
-        # print(f"                              | v_int_i: {np.round(v_int_i, decimals=2)} |")
-        # print(f"                              | term1: {np.round(term1, decimals=2)} | term2: {np.round(term2, decimals=2)}")
         return np.array(v_int_i)
 
     def psi_weight(self, arg):
@@ -675,22 +496,12 @@ class Main(BaseSample):
             # return True 
 
         curr_rho_x, curr_rho_y = self.robots[robot_index].rho
-    
         in_shape = False
         
-        # # Radius r_sense means this number of cells 
-
-        # Real value too large for now
+        # Radius r_sense means this number of cells: 
         r_sense_cell_x = np.int(r_sense/normalized_x_steps)
         r_sense_cell_y = np.int(r_sense/normalized_y_steps)
-        # print(f"r_sense_cell x:{r_sense_cell_x} y:{r_sense_cell_x}")
         
-        # Hardcode - using radius of cell_sense for now
-        # cell_sense = 1
-        # r_sense_cell_x = np.int(cell_sense)
-        # r_sense_cell_y = np.int(cell_sense)
-        # # print(f"r_sense_cell x:{r_sense_cell_x} y:{r_sense_cell_x}")
-
         # neighbouring cells within radius r_sense 
         area = grey_grid[curr_rho_x-r_sense_cell_x:curr_rho_x+r_sense_cell_x+1, curr_rho_y-r_sense_cell_y:curr_rho_y+r_sense_cell_y+1]
         
@@ -711,7 +522,6 @@ class Main(BaseSample):
 
     def occupied_cells(self):
         # return rho of occupied cells, considering radius of robot r_body
-        
         occupied = set()  # Using a set to avoid duplicate entries
 
         x_numcells = number_of_rows
@@ -778,7 +588,6 @@ class Main(BaseSample):
 
         if show_log_neighbouring_cells:
             log("neighbouring_cells()", f"Rob: {robot_index} | include occupied?: {in_shape} |  M_cells: {M_cells}")
-        # print("M_cells_Debug:\n",M_cells_debug)
         return M_cells
     
     def shape_exploration_velocity(self, robot_index):
@@ -818,15 +627,12 @@ class Main(BaseSample):
         return v_exp_i
 
     def send_robot_actions(self, step_size):
-    ##### Start of Print Test Area #####
-
         for robot in self.robots:
             robot.update()
             send_robot_data(robot)
 
         data_export.exportData()
 
-    # Start Velocity command:
 
         for robot_index in range(num_robots): 
             v_x, v_y = self.velocity_commands(robot_index) 
@@ -839,8 +645,7 @@ class Main(BaseSample):
             # Returns a weight between 0 and 1. If needing to turn 180 degrees, weight 0; If turning 0 degrees, weight = 1
             rotation_compensation = True
             if rotation_compensation:
-                rotation_compensation_0 = np.abs(180 - np.abs(angle_raw)) / 180     # Uses abs too many times
-                rotation_compensation_1 = ((180 - np.abs(angle_raw)) % 180) / 180   # Maybe easier to understand?
+                rotation_compensation_1 = ((180 - np.abs(angle_raw)) % 180) / 180  
 
                 rotation_compensation_angle = 1 #(1 + 0.5*(1-rotation_compensation_1))
 
@@ -864,95 +669,5 @@ class Main(BaseSample):
                     # log("", f"Without rot comp: {np.round(no_rot_comp_angle,decimals=2)} rad/s, {np.round(no_rot_comp_forward,decimals=2)} m/s | With: {np.round(angle, decimals=2)} rad/s, {np.round(forward, decimals=2)} m/s", True)
                     log("", f"Rot comp angle multiplier: {np.round(rotation_compensation_angle, decimals=2)} , forward multiplier: {np.round(rotation_compensation_1,decimals=2)}", True)
                     
-
-    # End Velocity command
-
-
-    # Start Exploration:
-
-        # for robot_index in range(1):  
-        #     performance_timestamp("") # Reset the timestamp time for time stamp measure section
-
-        #     exp_v_x, exp_v_y = self.shape_exploration_velocity(robot_index)
-        #     ent_v_x, ent_v_y, _ = self.shape_entering_velocity(robot_index)
-        #     v_x = exp_v_x + ent_v_x
-        #     v_y = exp_v_y + ent_v_y
-
-        #     performance_timestamp("shape exploration")
-
-        #     kf = 0.02
-        #     forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
-        #     ka = 0.8
-        #     curr_rot = self.robots[robot_index].euler_ori
-            
-        #     performance_timestamp("robot ori euler_ori")            
-            
-        #     ang = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
-        #     ang = np.deg2rad(ang)
-        #     angle = ka * (ang) # np.arctan2(v_y,v_x) - curr_rot[2]
-        #     self.robots[robot_index].instance.apply_action(self._Vel_controller.forward(command=[forward, angle]))
-            
-        #     performance_timestamp("apply robot action")
-
-    # End Exploration:
-
-    # Start Interaction: 
-     
-        # for robot_index in range(num_robots):
-        #     v_x, v_y, _ = self.interaction_velocity(robot_index)
-        #     curr_rot = self.robots[robot_index].euler_ori
-        #     kf = 0.02
-        #     forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
-        #     ang = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
-        #     ang = np.deg2rad(ang)
-        #     ka = 0.8
-        #     angle = ka * (ang) 
-        #     self.robots[robot_index].instance.apply_action(self._Vel_controller.forward(command=[forward, angle]))
-    
-    # End Interaction
-
-    # Start Entering:
-
-        # for robot_index in range(num_robots): # 
-        #     performance_timestamp("") # Reset the timestamp time for time stamp measure section
-
-        #     v_x, v_y, _ = self.shape_entering_velocity(robot_index)
-
-        #     performance_timestamp("shape entering")
-
-        #     kf = 0.02
-        #     forward = kf * (((v_x ** 2) + (v_y ** 2)) ** 0.5)
-        #     ka = 0.8
-        #     curr_rot = self.robots[robot_index].euler_ori
-            
-        #     performance_timestamp("robot ori euler_ori")
-            
-        #     # a = targetA - sourceA
-        #     # Version 1:
-        #     # a = np.arctan2(v_y,v_x) - curr_rot[2]
-        #     # if a > np.pi:
-        #     #     a -= 2*np.pi 
-        #     # if a < -np.pi:
-        #     #     a += 2*np.pi
-        #     # Version 2:
-        #     # Custom mod function: mod(a, n) -> a - floor(a/n) * n
-        #     ang = mod((np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]) + 180) , 360) - 180
-        #     ang = np.deg2rad(ang)
-        #     angle = ka * (ang) # np.arctan2(v_y,v_x) - curr_rot[2]
-        #     # if robot_index == 2:
-        #         # print("Rob", robot_index, ":\n Target angle", np.arctan2(v_y,v_x).round(decimals=2),"rads", np.rad2deg(np.arctan2(v_y,v_x)).round(decimals=2),"deg","\n Current angle:", np.array(curr_rot[2]).round(decimals=2),"rads", np.rad2deg(curr_rot[2]).round(decimals=2),"deg", "\n Difference:", np.array((np.arctan2(v_y,v_x) - curr_rot[2])).round(decimals=2), "rads", np.rad2deg(np.arctan2(v_y,v_x) - curr_rot[2]).round(decimals=2),"deg")
-        #         # print("Rob", robot_index, "Shp Ent Vel:", v_x, v_y)
-        #         # print("Rob", robot_index, "PD ctrllr:", forward, angle)
-
-        #     # b = self.in_shape_boundary(robot_index) # in_shape_boundary() works
-        #     # # nc = self.neighbouring_cells(robot_index) # neighbouring_cells() if in_shape_boundary() == False works
-        #     # oc = self.occupied_cells() # occupied_cells() works
-        #     # # nc = self.neighbouring_cells(robot_index) # neighbouring_cells() if in_shape_boundary() == True works
-        #     # nc = self.neighbouring_cells(robot_index) # neighbouring_cells() works
-        #     self.robots[robot_index].instance.apply_action(self._Vel_controller.forward(command=[forward, angle]))      
-
-        #     performance_timestamp("apply action")
-         
-    # End Entering 
         return
      

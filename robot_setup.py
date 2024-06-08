@@ -15,11 +15,10 @@ def create_robots(world, typeRobot, lineMode):
     kaya_asset_path = assets_root_path + "/Isaac/Robots/Kaya/kaya.usd"
     base_robot_prim_path = "/World/Robot_"
     base_robot_name="robot_"
-    # spawn_orientation = np.array([0.70711, 0, 0, -0.70711])
     spawn_orientation = np.array([1,0,0,0])
 
     if lineMode:
-        robot_spawn_positions_x_limits = [-0.7 , 0.7] #[-3.5*3/11, 3.5*3/11]
+        robot_spawn_positions_x_limits = [-0.7 , 0.7]
         robot_spawn_positions_y_limits = [0, 0]
         robot_spawn_positions_x = np.linspace(robot_spawn_positions_x_limits[0], robot_spawn_positions_x_limits[1], num_robots)
         robot_spawn_positions_y = np.linspace(robot_spawn_positions_y_limits[0], robot_spawn_positions_y_limits[1], num_robots)
@@ -52,8 +51,8 @@ def create_robots(world, typeRobot, lineMode):
                         
                     
     else:
-        robot_spawn_positions_x_limits = [-0.7 , 0.7] #[-1.3, 1.3] #[-3*3/11, 3*3/11]
-        robot_spawn_positions_y_limits = [-0.7 , 0.4] #[-0.3, 0.7] #[-1*3/11, 1*3/11]
+        robot_spawn_positions_x_limits = [-0.7 , 0.7] 
+        robot_spawn_positions_y_limits = [-0.7 , 0.4]
         robot_cols = int(np.ceil(np.sqrt(num_robots)))
         robot_rows = int(np.ceil(num_robots / robot_cols))
         robot_spawn_positions_x = np.linspace(robot_spawn_positions_x_limits[0], robot_spawn_positions_x_limits[1], robot_cols)
@@ -165,24 +164,7 @@ def create_vel_vis(world):
                         scale=np.array([0.02, 0.02, 0.02]),  
                         color=vel_color[v]
                     ))
-                
-    # return # base_sphere_prim_path, base_sphere_prim_path_suffix
 
-def create_vel_vis_material():      # Commented, not using
-    # stage = omni.usd.get_context().get_stage()
-    # mtl_created_list = []
-    # spheres_prim = [[0,0,0] for _ in range(num_robots)]
-    # for i in range(num_robots):
-    #     for v in range(3):
-    #         omni.kit.commands.execute( 
-    #             "CreateAndBindMdlMaterialFromLibrary",
-    #             mdl_name="OmniPBR.mdl",
-    #             mtl_name=f"OmniPBR",
-    #             mtl_created_list=mtl_created_list,
-    #         )
-    #         path = f"{base_sphere_prim_path}{i:02}/chassis{base_sphere_prim_path_suffix[v]}{i:02}"
-    #         spheres_prim[i][v] = stage.GetPrimAtPath(path)
-    return # mtl_created_list, spheres_prim
 
 def setup_robots(world):
     create_robots(world, typeRobot, lineMode)           # Create Robots

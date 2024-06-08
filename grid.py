@@ -36,9 +36,8 @@ def reverse_greyscale(shape_array):
     
     return output_rev_grey_grid
 
-
 def calculate_rho_0():
-    grey_shape = greyscale(input_shape, h) # grayscale(shape_array_0,h) # shape_array_2
+    grey_shape = greyscale(input_shape, h)
     number_of_rows, number_of_columns = grey_shape.shape
 
     # mid_point is rho_0
@@ -139,7 +138,6 @@ def create_old_grid_vis(world):
     
     wall_color_1 = np.array([1, 1, 1])
     wall_color_2 = np.array([0.01, 1, 0.01])
-    # wall_color = wall_color_1
     trans_height = -0.05
 
     low_x = np.floor(number_of_rows/2) - 1

@@ -13,13 +13,13 @@ from environment import create_situation_walls
 
 def setup_environment(world):
     ### Ground planes ###
-    # world.scene.add_default_ground_plane()                                                # Default
-    floor_color_toggle = 1
+    # world.scene.add_default_ground_plane()                                    # Default
+    floor_color_toggle = 2
     if floor_color_toggle == 1:
         floor_color = np.array([0.1, 0.1, 0.4])         # Blue
     elif floor_color_toggle == 2:
         floor_color = np.array([1.0, 1.0, 1.0])         # White
-    GroundPlane(prim_path="/World/groundPlane", size=10, color=floor_color)   # Custom
+    GroundPlane(prim_path="/World/groundPlane", size=10, color=floor_color)     # Custom
                                                         
     ### Lights ###
     light_1 = prim_utils.create_prim(
@@ -51,25 +51,16 @@ def setup_environment(world):
         resolution=(256, 256),
         orientation=[0.0, 0.70711, 0.0, -0.70711]
         # [0, 0, 90] is [0.0, 0.70711, 0.0, -0.70711] || OR || rot_utils.euler_angles_to_quats(np.array([180, -90, 0]), degrees=True, extrinsic=False)  
-        
-        # Trial and error to find correct orientation:    
-        # [-90, 0, 0]   -> [0, -90, 0]
-        # [90, 0, 0]    -> [-180, -90, 0]
-
-        # [0, 180, 0]   -> [-90, 90, 0]
-        # [0, 90, 0]    -> [0, 0, -90]      closest
-        # [0, 0, 0]     -> [90, -90, 0]
-        # [0, -90, 0]   -> [-180, 0, 90]
-        # [0, -180, 0]  -> [-90, 90, 0]
-        
-        # [0, 90, 90]   -> [90, 0, -90]
-        # [0, 90, -90]  -> [-90, 0, -90]
-        # [180, -90, 0] -> [0, 0, 90]       desired found
-        # [90, 90, 0]   -> [90, 0, -90]
-        # [-90, 90, 0]  -> [-90, 0, -90]
     
     )
-    
+    TopDownCameraCenter = Camera(
+        prim_path="/World/TopDownCameraCenter",
+        position=np.array([0.0, 1.0, 12.8]),
+        frequency=20,
+        resolution=(256, 256),
+        orientation=[0.0, 0.70711, 0.0, -0.70711]
+    )
+
     ### Togglable Enviroment ###
     if show_walls:
         walls_color = np.array([1, 0.5, 0.5])
@@ -77,8 +68,10 @@ def setup_environment(world):
         # walls_physics_material = 
         #create_walls(world, walls_color)    # Create Walls
         create_situation_walls(world, walls_color) # Create walls from situation data
+
+
     if show_grid_vis:
-        create_grid_vis(world)          # Create Grey Grid Visualisation
+        create_grid_vis(world)          # Create Greyscale Grid Visualisation
     if show_old_grid_vis:
         create_old_grid_vis(world)      # Create Grid Cell Visualisation
     if show_victim_cube:
