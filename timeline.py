@@ -60,10 +60,12 @@ def timeline_thread():
     global last_load
     
     with open(file_address, 'r') as file:
+        global timeline_active
         while timeline_active:
             # Check if there is still a line to read.
             readline = file.readline()
             if not readline:
+                timeline_active = False
                 break
 
             waitTime = float(readline)
